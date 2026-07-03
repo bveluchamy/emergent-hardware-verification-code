@@ -1,0 +1,238 @@
+DUT: round_robin_arbiter_mut.sv + round_robin_arbiter_checker.sv + round_robin_arbiter_env.sv
+  8 state bit(s), 3 input(s), 1 liveness, 1 assumption(s)
+  --- safety ---
+── Transition system (frontend output: RTL → state machine) ─────
+state bits (9): state[0], state[1], last_gnt_id[0], last_gnt_id[1], prev_req[0], prev_req[1], prev_req[2], started, __assm_ok
+inputs     (3): req[0], req[1], req[2]
+next-state functions  s' = f(s, inputs):
+  state[0]' = ((¬state[0] ∧ ¬state[1]) ? (req[0] ? 1'b1 : (req[1] ? 1'b0 : (req[2] ? 1'b1 : state[0]))) : ((state[0] ∧ ¬state[1]) ? (req[1] ? 1'b0 : (req[2] ? 1'b1 : (¬req[0] ? 1'b0 : state[0]))) : ((¬state[0] ∧ state[1]) ? (req[2] ? 1'b1 : (req[0] ? 1'b1 : (… ? 1'b0 : state[0]))) : ((state[0] ∧ state[1]) ? (req[0] ? 1'b1 : (req[1] ? 1'b0 : …)) : state[0]))))
+  state[1]' = ((¬state[0] ∧ ¬state[1]) ? (req[0] ? 1'b0 : (req[1] ? 1'b1 : (req[2] ? 1'b1 : state[1]))) : ((state[0] ∧ ¬state[1]) ? (req[1] ? 1'b1 : (req[2] ? 1'b1 : (¬req[0] ? 1'b0 : state[1]))) : ((¬state[0] ∧ state[1]) ? (req[2] ? 1'b1 : (req[0] ? 1'b0 : (… ? 1'b0 : state[1]))) : ((state[0] ∧ state[1]) ? (req[0] ? 1'b0 : (req[1] ? 1'b1 : …)) : state[1]))))
+  last_gnt_id[0]' = ((state[0] ∧ ¬state[1]) ? 1'b0 : (((¬state[0] ∧ state[1]) ∨ (state[0] ∧ ¬state[1])) ? 1'b1 : ((state[0] ∧ state[1]) ? 1'b0 : last_gnt_id[0])))
+  last_gnt_id[1]' = ((state[0] ∧ ¬state[1]) ? 1'b0 : (((¬state[0] ∧ state[1]) ∨ (state[0] ∧ ¬state[1])) ? 1'b0 : ((state[0] ∧ state[1]) ? 1'b1 : last_gnt_id[1])))
+  prev_req[0]' = req[0]
+  prev_req[1]' = req[1]
+  prev_req[2]' = req[2]
+  started' = 1'b1
+  __assm_ok' = (__assm_ok ∧ (¬started ∨ (¬(req[0] ⊕ prev_req[0]) ∧ ¬(req[1] ⊕ prev_req[1]) ∧ ¬(req[2] ⊕ prev_req[2]))))
+reset state: state[0]=0, state[1]=0, last_gnt_id[0]=1, last_gnt_id[1]=1, prev_req[0]=0, prev_req[1]=0, prev_req[2]=0, started=0, __assm_ok=1
+property holds when NOT bad, where  bad = (¬(¬((… ∧ …) ∨ (… ∧ …) ∨ (… ∧ …)) ∧ (¬(… ∧ req[1]) ∨ ¬(state[0] ∧ state[1]))) ∧ __assm_ok ∧ (¬started ∨ (¬(req[0] ⊕ prev_req[0]) ∧ ¬(req[1] ⊕ prev_req[1]) ∧ ¬(req[2] ⊕ prev_req[2]))))
+── Tseitin encoding of `bad` → CNF (the V8's fuel) ──────────────
+`bad` is a 32-gate datapath predicate; encoding it yields 31 variables and 63 clauses.
+(gate-by-gate output is elided here -- run a small FSM example to watch every
+ clause emitted; the mechanism is identical, just shorter.)
+
+── CDCL one-step -- is the property 1-inductive? ────────────────
+assume P(s) at a free start state, force one transition, ask if P(s') can fail.
+SAT → not 1-inductive (a P-state steps to ¬P; reachable? this query cannot say)
+  [CDCL one-step ] SAT   -> the property is NOT 1-inductive; witness {'state': 3, 'last_gnt_id': 2, 'prev_req': 0, 'started': 0, '__assm_ok': 1} steps to a violation (reachable? CDCL cannot say)
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  SAT → real counterexample, 1 step(s) from reset:
+  cycle 0: {'state': 0, 'last_gnt_id': 3, 'prev_req': 0, 'started': 0, '__assm_ok': 1}
+  cycle 1: {'state': 1, 'last_gnt_id': 3, 'prev_req': 5, 'started': 1, '__assm_ok': 1}
+  [BMC           ] CEX at depth 1 -> a real bug from reset
+── k-induction -- base case (BMC) + an unanchored inductive step ───
+step at depth k: assume P holds in k consecutive states tied by T,
+ask if the (k+1)-th can be bad. UNSAT ⇒ k-inductive (proved).
+k=1: base case — property holds for the first 1 state(s) from reset?
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+no counterexample up to depth 0: a bug finder, not (yet) a proof.
+  base holds; inductive step — P in states 0..0, can state 1 be bad?
+  SAT → counterexample-to-induction (a P-satisfying state stepping to bad):
+        {'state': 3, 'last_gnt_id': 2, 'prev_req': 0, 'started': 0, '__assm_ok': 1} → bad. Maybe unreachable; try k=2.
+k=2: base case — property holds for the first 2 state(s) from reset?
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  SAT → real counterexample, 1 step(s) from reset:
+  cycle 0: {'state': 0, 'last_gnt_id': 3, 'prev_req': 0, 'started': 0, '__assm_ok': 1}
+  cycle 1: {'state': 1, 'last_gnt_id': 3, 'prev_req': 5, 'started': 1, '__assm_ok': 1}
+  base case FAILS at k=2 → the property is simply false (real CEX)
+  [k-induction   ] CEX -> a real counterexample
+── IC3 / PDR -- frames of over-approximation, no unrolling ──────
+F_0=Init, each F_i ⊇ states reachable in ≤i steps and ⊆ P. Push bad
+cubes backward; a cube with no predecessor gives a clause to block it.
+frontier k=1: any state in F_1 that can step to bad?
+  ternary lift: 9-bit minterm → 6 literal(s) (0 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {state[0] & state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !started & __assm_ok} in F_1; discharge it backward
+  obligation {state[0] & state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !started & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/6 literals and
+    learn (last_gnt_id[0]) into F_1..F_1
+  ternary lift: 9-bit minterm → 4 literal(s) (0 outside the targets' cone, 5 X'd by simulation)
+  found a bad predecessor {state[0] & !state[1] & !started & __assm_ok} in F_1; discharge it backward
+  obligation {state[0] & !state[1] & !started & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/4 literals and
+    learn (!state[0] | started) into F_1..F_1
+  ternary lift: 9-bit minterm → 6 literal(s) (0 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {state[0] & !state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __assm_ok} in F_1; discharge it backward
+  obligation {state[0] & !state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 3/6 literals and
+    learn (!state[0] | state[1] | prev_req[0]) into F_1..F_1
+  ternary lift: 9-bit minterm → 6 literal(s) (0 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {state[0] & !state[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & __assm_ok} in F_1; discharge it backward
+    ternary lift: 9-bit minterm → 4 literal(s) (2 outside the targets' cone, 3 X'd by simulation)
+  obligation {state[0] & !state[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & __assm_ok} @F_1: has a predecessor {!state[0] & !state[1] & !started & __assm_ok} in F_0 → block that first
+  obligation reached Init → the bad state is reachable → UNSAFE
+  [IC3/PDR       ] UNSAFE -> a real counterexample
+── Interpolation (McMillan) -- carve the fence from a refutation ───
+A trusted BMC screen first; then, from each UNSAT one-step query, extract an
+interpolant I(s') over the frontier and widen R := R ∨ I until the image closes.
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  SAT → real counterexample, 1 step(s) from reset:
+  cycle 0: {'state': 0, 'last_gnt_id': 3, 'prev_req': 0, 'started': 0, '__assm_ok': 1}
+  cycle 1: {'state': 1, 'last_gnt_id': 3, 'prev_req': 5, 'started': 1, '__assm_ok': 1}
+BMC screen found a reachable bad state → UNSAFE (no proof to carve)
+  [interpolation ] UNSAFE -> a real counterexample (reachable from reset)
+  --- liveness 0: (req[0]) |-> s_eventually ((state[0] ∧ ¬state[1])) ---
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  UNSAT → no counterexample of length 1
+depth k=2: is a bad state reachable in exactly 2 step(s) from reset?
+  UNSAT → no counterexample of length 2
+depth k=3: is a bad state reachable in exactly 3 step(s) from reset?
+  UNSAT → no counterexample of length 3
+depth k=4: is a bad state reachable in exactly 4 step(s) from reset?
+  UNSAT → no counterexample of length 4
+depth k=5: is a bad state reachable in exactly 5 step(s) from reset?
+  UNSAT → no counterexample of length 5
+depth k=6: is a bad state reachable in exactly 6 step(s) from reset?
+  UNSAT → no counterexample of length 6
+depth k=7: is a bad state reachable in exactly 7 step(s) from reset?
+  UNSAT → no counterexample of length 7
+depth k=8: is a bad state reachable in exactly 8 step(s) from reset?
+  UNSAT → no counterexample of length 8
+depth k=9: is a bad state reachable in exactly 9 step(s) from reset?
+  UNSAT → no counterexample of length 9
+depth k=10: is a bad state reachable in exactly 10 step(s) from reset?
+  UNSAT → no counterexample of length 10
+depth k=11: is a bad state reachable in exactly 11 step(s) from reset?
+  UNSAT → no counterexample of length 11
+depth k=12: is a bad state reachable in exactly 12 step(s) from reset?
+  UNSAT → no counterexample of length 12
+no counterexample up to depth 12: a bug finder, not (yet) a proof.
+── IC3 / PDR -- frames of over-approximation, no unrolling ──────
+F_0=Init, each F_i ⊇ states reachable in ≤i steps and ⊆ P. Push bad
+cubes backward; a cube with no predecessor gives a clause to block it.
+frontier k=1: any state in F_1 that can step to bad?
+  found a bad predecessor {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_1; discharge it backward
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/21 literals and
+    learn (last_gnt_id[0]) into F_1..F_1
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_1; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/21 literals and
+    learn (last_gnt_id[1]) into F_1..F_1
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_1; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/21 literals and
+    learn (started | !__shadow_last_gnt_id[1]) into F_1..F_1
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_1; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/21 literals and
+    learn (!__shadow_started) into F_1..F_1
+  F_1 frontier is clean (no move to bad)
+frontier k=2: any state in F_2 that can step to bad?
+  found a bad predecessor {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 2/21 literals and
+    learn (last_gnt_id[0] | started) into F_1..F_2
+  found a bad predecessor {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/21 literals and
+    learn (last_gnt_id[0] | __shadow_state[0] | !__shadow_started) into F_1..F_2
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (last_gnt_id[1] | __shadow_state[0] | __shadow_state[1] | !__shadow_started) into F_1..F_2
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 5/21 literals and
+    learn (__pending | !__saved | __shadow_state[0] | !__shadow_started | __triggered) into F_1..F_2
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+    ternary lift: 21-bit minterm → 12 literal(s) (0 outside the targets' cone, 9 X'd by simulation)
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: has a predecessor {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} in F_1 → block that first
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/12 literals and
+    learn (state[0] | !__pending) into F_1..F_1
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/21 literals and
+    learn (__shadow_state[0] | !__shadow_started | !__shadow___pending) into F_1..F_2
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/12 literals and
+    learn (state[0] | !last_gnt_id[0] | !__pending) into F_1..F_2
+  found a bad predecessor {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {!state[0] & !state[1] & last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & !started & !__pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 2/21 literals and
+    learn (last_gnt_id[1] | started) into F_1..F_2
+  found a bad predecessor {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (prev_req[0] | !__pending | __shadow_state[1] | !__shadow_started) into F_1..F_2
+  found a bad predecessor {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (!__pending | __shadow_state[1] | !__shadow_started | !__shadow___pending) into F_1..F_2
+  found a bad predecessor {state[0] & state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {state[0] & state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/21 literals and
+    learn (!last_gnt_id[0] | !__shadow___pending | __triggered) into F_1..F_2
+  found a bad predecessor {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & !__pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (!__saved | !__shadow_started | __shadow___pending | __triggered) into F_1..F_2
+  found a bad predecessor {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_2; discharge it backward
+  obligation {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/21 literals and
+    learn (__shadow_last_gnt_id[0] | !__shadow___pending | __triggered) into F_1..F_2
+  F_2 frontier is clean (no move to bad)
+frontier k=3: any state in F_3 that can step to bad?
+  found a bad predecessor {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+    ternary lift: 21-bit minterm → 12 literal(s) (0 outside the targets' cone, 9 X'd by simulation)
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_3: has a predecessor {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} in F_2 → block that first
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/12 literals and
+    learn (state[0] | last_gnt_id[1] | !__pending) into F_1..F_2
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 6/21 literals and
+    learn (last_gnt_id[0] | last_gnt_id[1] | __shadow_state[0] | __shadow_last_gnt_id[0] | !__shadow___pending | __triggered) into F_1..F_3
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & !last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 4/12 literals and
+    learn (state[0] | last_gnt_id[0] | last_gnt_id[1] | !__pending) into F_1..F_3
+  found a bad predecessor {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+    ternary lift: 21-bit minterm → 12 literal(s) (0 outside the targets' cone, 9 X'd by simulation)
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_3: has a predecessor {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} in F_2 → block that first
+    ternary lift: 21-bit minterm → 6 literal(s) (9 outside the targets' cone, 6 X'd by simulation)
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_2: has a predecessor {state[0] & state[1] & !started & __pending & !__saved & __assm_ok} in F_1 → block that first
+  obligation {state[0] & state[1] & !started & __pending & !__saved & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/6 literals and
+    learn (started | !__pending) into F_1..F_1
+    ternary lift: 21-bit minterm → 8 literal(s) (9 outside the targets' cone, 4 X'd by simulation)
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_2: has a predecessor {state[0] & state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __pending & !__saved & __assm_ok} in F_1 → block that first
+  obligation {state[0] & state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __pending & !__saved & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/8 literals and
+    learn (prev_req[0] | !__pending) into F_1..F_1
+  obligation {state[0] & state[1] & !started & __pending & !__saved & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 2/6 literals and
+    learn (started | !__pending) into F_1..F_2
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/12 literals and
+    learn (state[0] | !__pending | !__assm_ok) into F_1..F_2
+  obligation {state[0] & state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __pending & !__saved & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/8 literals and
+    learn (prev_req[0] | !__pending | !__assm_ok) into F_1..F_2
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & !__shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (prev_req[0] | !__shadow___pending | __triggered | !__assm_ok) into F_1..F_3
+  obligation {!state[0] & !state[1] & !last_gnt_id[0] & last_gnt_id[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & !__saved & !__triggered & __assm_ok} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 3/12 literals and
+    learn (state[0] | !__pending | !__assm_ok) into F_1..F_3
+  obligation {state[0] & state[1] & !started & __pending & !__saved & __assm_ok} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 2/6 literals and
+    learn (started | !__pending) into F_1..F_3
+  obligation {state[0] & state[1] & !prev_req[0] & !prev_req[1] & !prev_req[2] & __pending & !__saved & __assm_ok} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 3/8 literals and
+    learn (prev_req[0] | !__pending | !__assm_ok) into F_1..F_3
+  found a bad predecessor {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+  obligation {state[0] & !state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & !__shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 6/21 literals and
+    learn (!__pending | __shadow_state[1] | !__shadow_started | !__shadow___pending | __triggered | !__assm_ok) into F_1..F_3
+  found a bad predecessor {state[0] & state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+  obligation {state[0] & state[1] & last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (!last_gnt_id[0] | !__shadow___pending | __triggered | !__assm_ok) into F_1..F_3
+  found a bad predecessor {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+  obligation {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & !prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 3/21 literals and
+    learn (!state[1] | prev_req[1] | prev_req[2]) into F_1..F_3
+  found a bad predecessor {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_3; discharge it backward
+  obligation {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_3: no predecessor in F_2 → ¬cube is inductive; generalize to 6/21 literals and
+    learn (!state[1] | !__shadow_state[1] | __shadow_last_gnt_id[0] | !__shadow___pending | __triggered | !__assm_ok) into F_1..F_3
+  F_3 frontier is clean (no move to bad)
+frontier k=4: any state in F_4 that can step to bad?
+  found a bad predecessor {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} in F_4; discharge it backward
+  obligation {state[0] & state[1] & !last_gnt_id[0] & last_gnt_id[1] & prev_req[0] & !prev_req[1] & prev_req[2] & started & __pending & __saved & __shadow_state[0] & __shadow_state[1] & …(+9 more)} @F_4: no predecessor in F_3 → ¬cube is inductive; generalize to 4/21 literals and
+    learn (!state[1] | last_gnt_id[0] | !__pending | !__assm_ok) into F_1..F_4
+  F_4 frontier is clean (no move to bad)
+propagation makes F_4 = F_5: converged. The frame is an
+inductive invariant (13 clause(s)). SAFE.
+  [liveness      ] HOLDS -> no starvation lasso is reachable

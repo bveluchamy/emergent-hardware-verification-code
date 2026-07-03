@@ -1,0 +1,6 @@
+DUT: mem_ctrl_pkg.sv + mem_ctrl_word_mut.sv + mem_ctrl_word_props.sv (word-level: 14 state, 1 memory kept symbolic)
+── word-level BMC of mem_ctrl: unroll 0 frames, memory kept symbolic ───
+  no ¬prop through depth 0 -> SAFE up to 0
+── word-level k-induction of mem_ctrl at k=1 ────────────────────
+  [word k-induction] REFUTED -> a counterexample exists (the memory contract fails)
+REFUTED: the word-level engine broke the memory contract.

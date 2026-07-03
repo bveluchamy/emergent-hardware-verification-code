@@ -1,0 +1,12 @@
+// AXI4 burst-field legality (no variable*variable -> Tier-1)
+rand bit [1:0] size;
+rand bit [1:0] burst;
+rand bit [3:0] len;
+rand bit [1:0] region;
+constraint c {
+  burst != 3;
+  (burst == 0) -> (len <= 3);
+  (burst == 2) -> (len inside {1,3,7,15});
+  size <= 3;
+  region != 0;
+}

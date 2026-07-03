@@ -1,0 +1,11 @@
+# Verilator build artifacts
+obj_dir/
+*.vcd
+dump.vcd
+# Lean / Lake build output
+.lake/
+# Python
+__pycache__/
+*.pyc
+# macOS
+.DS_Store

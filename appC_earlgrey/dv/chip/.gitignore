@@ -1,0 +1,7 @@
+obj_dir/
+*.log
+*.fst
+*.vmem
+gpio0-read
+gpio0-write
+*.bak

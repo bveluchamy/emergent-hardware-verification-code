@@ -1,0 +1,142 @@
+VERILATOR ?= verilator
+PKG_DIR    = ../../../actor_pkg
+COMMON_DIR = ../common
+IP_DIR     = ../ip
+
+PKG_SRCS = $(PKG_DIR)/actor_pkg.sv \
+           $(PKG_DIR)/actor_supervision_pkg.sv \
+           $(PKG_DIR)/actor_lifecycle_pkg.sv \
+           $(PKG_DIR)/actor_observability_pkg.sv \
+           $(PKG_DIR)/actor_persistence_pkg.sv
+
+COMMON_SRCS = $(COMMON_DIR)/tlul_pkg.sv \
+              $(COMMON_DIR)/irq_pkg.sv \
+              $(COMMON_DIR)/alert_pkg.sv \
+              $(COMMON_DIR)/reset_pkg.sv \
+              $(COMMON_DIR)/chip_msg_pkg.sv \
+              $(COMMON_DIR)/earlgrey_memory_map_pkg.sv \
+              $(COMMON_DIR)/tlul_if.sv \
+              $(COMMON_DIR)/tlul_master_actor.sv \
+              $(COMMON_DIR)/tlul_slave_actor.sv \
+              $(COMMON_DIR)/tlul_monitor_actor.sv \
+              $(COMMON_DIR)/tlul_xbar_actor.sv \
+              $(PKG_DIR)/actor_ral_pkg.sv \
+              $(COMMON_DIR)/tlul_ral_actor.sv \
+              $(COMMON_DIR)/ot_supervisor_actor.sv
+
+UART_SRCS = $(IP_DIR)/uart/uart_pkg.sv \
+            $(IP_DIR)/uart/uart_ral_defs.sv \
+            $(IP_DIR)/uart/uart_if.sv \
+            $(IP_DIR)/uart/uart_actor.sv \
+            $(IP_DIR)/uart/uart_scoreboard_actor.sv \
+            $(IP_DIR)/uart/uart_coverage_actor.sv \
+            $(IP_DIR)/uart/uart_env_actor.sv
+
+# Auto-generated RAL definitions (regenerate via reggen_actor.py)
+RAL_DEFS_SRCS = $(IP_DIR)/gpio/gpio_ral_defs.sv \
+                $(IP_DIR)/i2c/i2c_ral_defs.sv \
+                $(IP_DIR)/spi_host/spi_host_ral_defs.sv \
+                $(IP_DIR)/hmac/hmac_ral_defs.sv \
+                $(IP_DIR)/aes/aes_ral_defs.sv \
+                $(IP_DIR)/kmac/kmac_ral_defs.sv \
+                $(IP_DIR)/aon_timer/aon_timer_ral_defs.sv \
+                $(IP_DIR)/csrng/csrng_ral_defs.sv \
+                $(IP_DIR)/edn/edn_ral_defs.sv \
+                $(IP_DIR)/entropy_src/entropy_src_ral_defs.sv \
+                $(IP_DIR)/pwrmgr/pwrmgr_ral_defs.sv \
+                $(IP_DIR)/rstmgr/rstmgr_ral_defs.sv \
+                $(IP_DIR)/clkmgr/clkmgr_ral_defs.sv \
+                $(IP_DIR)/lc_ctrl/lc_ctrl_ral_defs.sv \
+                $(IP_DIR)/flash_ctrl/flash_ctrl_ral_defs.sv \
+                $(IP_DIR)/rom_ctrl/rom_ctrl_ral_defs.sv \
+                $(IP_DIR)/otp_ctrl/otp_ctrl_ral_defs.sv \
+                $(IP_DIR)/keymgr/keymgr_ral_defs.sv \
+                $(IP_DIR)/otbn/otbn_ral_defs.sv \
+                $(IP_DIR)/spi_device/spi_device_ral_defs.sv \
+                $(IP_DIR)/usbdev/usbdev_ral_defs.sv \
+                $(IP_DIR)/pwm/pwm_ral_defs.sv \
+                $(IP_DIR)/adc_ctrl/adc_ctrl_ral_defs.sv
+
+AON_SRCS = $(IP_DIR)/aon_timer/aon_timer_pkg.sv \
+           $(IP_DIR)/aon_timer/aon_timer_if.sv \
+           $(IP_DIR)/aon_timer/aon_timer_actor.sv \
+           $(IP_DIR)/aon_timer/aon_timer_scoreboard_actor.sv \
+           $(IP_DIR)/aon_timer/aon_timer_env_actor.sv
+
+ALERT_SRCS = $(IP_DIR)/alert_handler/alert_source_actor.sv \
+             $(IP_DIR)/alert_handler/alert_handler_actor.sv \
+             $(IP_DIR)/alert_handler/esc_action_actor.sv \
+             $(IP_DIR)/alert_handler/alert_handler_scoreboard_actor.sv \
+             $(IP_DIR)/alert_handler/alert_handler_env_actor.sv
+
+# Earlgrey-specific IPs
+EG_IP_SRCS = $(IP_DIR)/clkmgr/clkmgr_pkg.sv \
+             $(IP_DIR)/clkmgr/clkmgr_actor.sv \
+             $(IP_DIR)/pwrmgr/pwrmgr_pkg.sv \
+             $(IP_DIR)/pwrmgr/pwrmgr_actor.sv \
+             $(IP_DIR)/rstmgr/rstmgr_pkg.sv \
+             $(IP_DIR)/rstmgr/rstmgr_actor.sv \
+             $(IP_DIR)/lc_ctrl/lc_ctrl_pkg.sv \
+             $(IP_DIR)/lc_ctrl/lc_ctrl_actor.sv \
+             $(IP_DIR)/flash_ctrl/flash_ctrl_pkg.sv \
+             $(IP_DIR)/flash_ctrl/flash_ctrl_actor.sv \
+             $(IP_DIR)/rom_ctrl/rom_ctrl_pkg.sv \
+             $(IP_DIR)/rom_ctrl/rom_ctrl_actor.sv \
+             $(IP_DIR)/otp_ctrl/otp_ctrl_pkg.sv \
+             $(IP_DIR)/otp_ctrl/otp_ctrl_actor.sv \
+             $(IP_DIR)/keymgr/keymgr_pkg.sv \
+             $(IP_DIR)/keymgr/keymgr_actor.sv \
+             $(IP_DIR)/aes/aes_pkg.sv \
+             $(IP_DIR)/aes/aes_actor.sv \
+             $(IP_DIR)/kmac/kmac_pkg.sv \
+             $(IP_DIR)/kmac/kmac_actor.sv \
+             $(IP_DIR)/hmac/hmac_pkg.sv \
+             $(IP_DIR)/hmac/hmac_actor.sv \
+             $(IP_DIR)/entropy_src/entropy_src_pkg.sv \
+             $(IP_DIR)/entropy_src/entropy_src_actor.sv \
+             $(IP_DIR)/csrng/csrng_pkg.sv \
+             $(IP_DIR)/csrng/csrng_actor.sv \
+             $(IP_DIR)/edn/edn_pkg.sv \
+             $(IP_DIR)/edn/edn_actor.sv \
+             $(IP_DIR)/rv_plic/rv_plic_pkg.sv \
+             $(IP_DIR)/rv_plic/rv_plic_actor.sv \
+             $(IP_DIR)/rv_core_ibex/rv_core_ibex_actor.sv \
+             $(IP_DIR)/gpio/gpio_pkg.sv \
+             $(IP_DIR)/gpio/gpio_actor.sv \
+             $(IP_DIR)/pinmux/pinmux_pkg.sv \
+             $(IP_DIR)/pinmux/pinmux_actor.sv \
+             $(IP_DIR)/pwm/pwm_pkg.sv \
+             $(IP_DIR)/pwm/pwm_actor.sv \
+             $(IP_DIR)/adc_ctrl/adc_ctrl_pkg.sv \
+             $(IP_DIR)/adc_ctrl/adc_ctrl_actor.sv \
+             $(IP_DIR)/i2c/i2c_pkg.sv \
+             $(IP_DIR)/i2c/i2c_actor.sv \
+             $(IP_DIR)/spi_host/spi_host_pkg.sv \
+             $(IP_DIR)/spi_host/spi_host_actor.sv \
+             $(IP_DIR)/spi_device/spi_device_pkg.sv \
+             $(IP_DIR)/spi_device/spi_device_actor.sv \
+             $(IP_DIR)/usbdev/usbdev_pkg.sv \
+             $(IP_DIR)/usbdev/usbdev_actor.sv \
+             $(IP_DIR)/otbn/otbn_pkg.sv \
+             $(IP_DIR)/otbn/otbn_actor.sv
+
+SOC_SRCS = chip_scoreboard_actor.sv \
+           earlgrey_chip_env_actor.sv \
+           earlgrey_chip_sw_test.sv \
+           earlgrey_tb_top.sv
+
+SRCS = $(PKG_SRCS) $(COMMON_SRCS) $(UART_SRCS) $(AON_SRCS) $(ALERT_SRCS) $(EG_IP_SRCS) $(RAL_DEFS_SRCS) $(SOC_SRCS)
+
+VFLAGS = --binary -j 0 --timing -Wno-fatal --top-module earlgrey_tb_top
+
+all: sim
+
+sim: $(SRCS)
+	$(VERILATOR) $(VFLAGS) $(SRCS)
+	./obj_dir/Vearlgrey_tb_top
+
+lint: $(SRCS)
+	$(VERILATOR) --lint-only -Wno-fatal --top-module earlgrey_tb_top $(SRCS)
+
+clean:
+	rm -rf obj_dir earlgrey_chip_trace.csv earlgrey_chip_trace.jsonl

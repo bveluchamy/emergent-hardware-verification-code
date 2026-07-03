@@ -1,0 +1,27 @@
+DUT: pipelined ALU -- sequential equivalence vs in-order reference
+
+── Pipelined-ALU sequential equivalence (word-level DPLL(T)) ────
+program of 4 ADDs; pipeline forwarding decisions:
+  I0: r1 = r2[RF(rf2_init)] + r3[RF(rf3_init)]
+  I1: r4 = r1[MEM(I0)] + r5[RF(rf5_init)]
+  I2: r6 = r1[WB(I0)] + r4[MEM(I1)]
+  I3: r7 = r6[MEM(I2)] + r1[RF(I0)]
+miter: does any pipeline result differ from the in-order reference?
+── DPLL(T) @ 8-bit -- SAT proposes, the word-level theory disposes ───
+  atom 1:  (= (+ rf2_init rf3_init) (+ rf2_init rf3_init))
+  atom 2:  (= (+ (+ rf2_init rf3_init) rf5_init) (+ (+ rf2_init rf3_init) rf5_init))
+  atom 3:  (= (+ (+ rf2_init rf3_init) (+ (+ rf2_init rf3_init) rf5_init)) (+ (+ rf2_init rf3_init) (+ (+ rf2_init rf3_init) rf5_init)))
+  atom 4:  (= (+ (+ (+ rf2_init rf3_init) (+ (+ rf2_init rf3_init) rf5_init)) (+ rf2_init rf3_init)) (+ (+ (+ rf2_init rf3_init) (+ (+ rf2_init rf3_init) rf5_init)) (+ rf2_init rf3_init)))
+loop: CDCL finds a truth assignment over the atoms; the theory checks it in
+      the bit-vector algebra and returns a lemma on any inconsistency.
+SAT skeleton: ¬atom1, ¬atom2, ¬atom3, ¬atom4
+  theory conflict on atoms [1] (normal forms force it) → learn lemma [1]
+SAT skeleton: atom1, ¬atom2, ¬atom3, ¬atom4
+  theory conflict on atoms [2] (normal forms force it) → learn lemma [2]
+SAT skeleton: atom1, atom2, ¬atom3, ¬atom4
+  theory conflict on atoms [3] (normal forms force it) → learn lemma [3]
+SAT skeleton: atom1, atom2, atom3, ¬atom4
+  theory conflict on atoms [4] (normal forms force it) → learn lemma [4]
+Boolean skeleton is UNSAT after 4 theory lemma(s) → UNSAT overall.
+
+SEQUENTIAL EQUIVALENCE: the pipeline is EQUIVALENT to the in-order reference for every operand value (word-level).

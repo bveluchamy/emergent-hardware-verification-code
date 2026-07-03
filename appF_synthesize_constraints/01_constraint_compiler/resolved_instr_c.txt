@@ -1,0 +1,5 @@
+// auto-resolved from demo_cfg.sv::instr_c by frontend.py
+rand bit [4:0] gpr;
+constraint c {
+  (!((gpr)==0 || (gpr)==2 || (gpr)==3 || (gpr)==4 || (gpr)==0));
+}

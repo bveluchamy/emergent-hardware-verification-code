@@ -1,0 +1,10 @@
+// REAL riscv-dv: sp_tp_c (riscv_instr_gen_config.sv), enum regs -> ABI ints
+rand bit       fix_sp;
+rand bit [4:0] sp;
+rand bit [4:0] tp;
+constraint sp_tp_c {
+  (fix_sp == 1) -> (sp == 2);
+  sp != tp;
+  !(sp inside {3, 1, 0});
+  !(tp inside {3, 1, 0});
+}

@@ -1,0 +1,1568 @@
+# riscv-dv constraint inventory — 140 blocks
+
+## aq_rl_c  (isa/riscv_amo_instr.sv)  [relational]
+constraint aq_rl_c {
+    (aq && rl) == 0;
+  }
+
+## imm_val_c  (isa/riscv_compressed_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint imm_val_c {
+    if(imm_type inside {NZIMM, NZUIMM}) {
+      imm[5:0] != 0;
+      if (instr_name == C_LUI) {
+        // TODO(taliu) Check why bit 6 cannot be zero
+        imm[31:5] == 0;
+      }
+      if (instr_name inside {C_SRAI, C_SRLI, C_SLLI}) {
+        imm[31:5] == 0;
+      }
+    }
+    if (instr_name == C_ADDI4SPN) {
+      imm[1:0] == 0;
+    }
+  }
+
+## jal_c  (isa/riscv_compressed_instr.sv)  [cond/impl,cfg-reactive]
+constraint jal_c {
+    if (XLEN != 32) {
+      instr_name != C_JAL;
+    }
+  }
+
+## no_hint_illegal_instr_c  (isa/riscv_compressed_instr.sv)  [inside/range,cond/impl]
+constraint no_hint_illegal_instr_c {
+    if (instr_name inside {C_ADDI, C_ADDIW, C_LI, C_LUI, C_SLLI, C_SLLI64,
+                           C_LQSP, C_LDSP, C_MV, C_ADD, C_LWSP}) {
+      rd != ZERO;
+    }
+    if (instr_name == C_JR) {
+      rs1 != ZERO;
+    }
+    if (instr_name inside {C_ADD, C_MV}) {
+      rs2 != ZERO;
+    }
+    (instr_name == C_LUI) -> (rd != SP);
+  }
+
+## rvc_csr_c  (isa/riscv_compressed_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint rvc_csr_c {
+    //  Registers specified by the three-bit rs1’, rs2’, and rd’
+    if (format inside {CIW_FORMAT, CL_FORMAT, CS_FORMAT, CB_FORMAT, CA_FORMAT}) {
+      if (has_rs1) {
+        rs1 inside {[S0:A5]};
+      }
+      if (has_rs2) {
+        rs2 inside {[S0:A5]};
+      }
+      if (has_rd) {
+        rd inside {[S0:A5]};
+      }
+    }
+    // C_ADDI16SP is only valid when rd == SP
+    if (instr_name == C_ADDI16SP) {
+      rs1 == SP;
+      rd  == SP;
+    }
+    if (instr_name inside {C_JR, C_JALR}) {
+      rs2 == ZERO;
+      rs1 != ZERO;
+    }
+    // These formats potentially have rd == rs1
+    if (format inside {CA_FORMAT, CB_FORMAT, CI_FORMAT, CR_FORMAT}) {
+      if (has_rd && has_rs1) {
+        rd == rs1;
+      }
+    }
+  }
+
+## csr_addr_c  (isa/riscv_csr_instr.sv)  [inside/range,cond/impl]
+constraint csr_addr_c {
+    if (include_reg.size() > 0) {
+      csr inside {include_reg};
+    }
+    if (exclude_reg.size() > 0) {
+      !(csr inside {exclude_reg});
+    }
+  }
+
+## csr_csrrsc  (isa/riscv_csr_instr.sv)  [cond/impl]
+constraint csr_csrrsc {
+    if (instr_name == CSRRS || instr_name == CSRRC) {
+      (write_csr == 1'b1) || rs1 == 0;
+    }
+  }
+
+## csr_csrrsci  (isa/riscv_csr_instr.sv)  [cond/impl]
+constraint csr_csrrsci {
+    if(instr_name == CSRRSI || instr_name == CSRRCI) {
+      (write_csr == 1'b1) || imm == 0;
+    }
+  }
+
+## csr_csrrw  (isa/riscv_csr_instr.sv)  [cond/impl]
+constraint csr_csrrw {
+    if (instr_name == CSRRW || instr_name == CSRRWI) {
+      write_csr == 1'b1;
+    }
+  }
+
+## order  (isa/riscv_csr_instr.sv)  [dist,solve-order]
+constraint order {
+    // Choose a CSR before deciding whether we want to write to the CSR values. Then choose whether
+    // to read or write before choosing the rs1 and imm values. This ensures read-only accesses to
+    // read-only CSRs with similar probability to other CSR accesses and ensures a reasonable write
+    // vs read distribution for CSRs that can be written.
+    solve csr before write_csr, rs1, imm;
+    solve write_csr before rs1, imm;
+  }
+
+## write_csr_c  (isa/riscv_csr_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint write_csr_c {
+    // We can only write a CSR if:
+    // - It's a read-only CSR and we're generating writes to read-only CSRs
+    // - Specific CSRs to write to are specified and this CSR is one
+    // - No specific CSRs to write to are specified and this isn't a read-only CSR
+    if(!((csr[11:10] == 2'b11 && allow_ro_write) ||
+         ((include_write_reg.size() > 0) && (csr inside {include_write_reg})) ||
+         ((csr[11:10] != 2'b11) && (include_write_reg.size() == 0)))) {
+      write_csr == 1'b0;
+    }
+  }
+
+## rvfc_csr_c  (isa/riscv_floating_point_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint rvfc_csr_c {
+    if (format inside {CL_FORMAT, CS_FORMAT, CI_FORMAT, CSS_FORMAT}) {
+      if (has_rs1) {
+        rs1 inside {[S0:A5]};
+      }
+      if (has_fs2) {
+        fs2 inside {[FS0:FS1]};
+      }
+      if (has_fd) {
+        fd inside {[FA0:FA5]};
+      }
+    }
+}
+
+## imm_c  (isa/riscv_instr.sv)  [inside/range,cond/impl,cfg-reactive,bitslice]
+constraint imm_c {
+    if (instr_name inside {SLLIW, SRLIW, SRAIW}) {
+      imm[11:5] == 0;
+    }
+    if (instr_name inside {SLLI, SRLI, SRAI}) {
+      if (XLEN == 32) {
+        imm[11:5] == 0;
+      } else {
+        imm[11:6] == 0;
+      }
+    }
+  }
+
+## add_sub_with_carry_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint add_sub_with_carry_c {
+    if (m_cfg.vector_cfg.vtype.vlmul > 1) {
+      // For vadc and vsbc, an illegal instruction exception is raised if the
+      // destination vector register is v0 and LMUL> 1
+      if (instr_name inside {VADC, VSBC}) {
+        vd != 0;
+      }
+      // For vmadc and vmsbc, an illegal instruction exception is raised if the
+      // destination vector register overlaps asource vector register group and LMUL > 1
+      if (instr_name inside {VMADC, VMSBC}) {
+        vd != vs2;
+        vd != vs1;
+      }
+    }
+  }
+
+## avoid_reserved_vregs_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint avoid_reserved_vregs_c {
+    if (m_cfg.vector_cfg.reserved_vregs.size() > 0) {
+      !(vd inside {m_cfg.vector_cfg.reserved_vregs});
+    }
+  }
+
+## compare_instr_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint compare_instr_c {
+    if (category == COMPARE) {
+      vd != vs2;
+      vd != vs1;
+    }
+  }
+
+## disable_floating_point_varaint_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint disable_floating_point_varaint_c {
+    if (!m_cfg.vector_cfg.vec_fp) {
+      va_variant != VF;
+    }
+  }
+
+## load_store_eew_emul_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint load_store_eew_emul_c {
+    if (category inside {LOAD, STORE, AMO}) {
+      eew inside {m_cfg.vector_cfg.legal_eew};
+      if (eew > m_cfg.vector_cfg.vtype.vsew) {
+        emul == eew / m_cfg.vector_cfg.vtype.vsew;
+      } else {
+        emul == 1;
+      }
+      if (emul > 1) {
+        vd % emul == 0;
+        vs1 % emul == 0;
+        vs2 % emul == 0;
+        vs3 % emul == 0;
+      }
+    }
+  }
+
+## load_store_solve_order_c  (isa/riscv_vector_instr.sv)  [solve-order]
+constraint load_store_solve_order_c {
+    solve eew before emul;
+    solve emul before vd;
+    solve emul before vs1;
+    solve emul before vs2;
+    solve emul before vs3;
+  }
+
+## narrowing_instr_c  (isa/riscv_vector_instr.sv)  [mul,inside/range,cond/impl,bitslice]
+constraint narrowing_instr_c {
+    if (is_narrowing_instr) {
+      // The source and destination vector register numbers must be aligned
+      // appropriately for the vector registergroup size
+      vs2 % (m_cfg.vector_cfg.vtype.vlmul * 2) == 0;
+      // The destination vector register group cannot overlap the rst source
+      // vector register group (specied by vs2)
+      !(vd inside {[vs2 : vs2 + m_cfg.vector_cfg.vtype.vlmul * 2 - 1]});
+      // The destination vector register group cannot overlap the mask register
+      // if used, unless LMUL=1 (implemented in vmask_overlap_c)
+    }
+  }
+
+## nfields_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint nfields_c {
+    if (check_sub_extension(sub_extension, "zvlsseg")) {
+      if (m_cfg.vector_cfg.vtype.vlmul < 8) {
+        (nfields + 1) * m_cfg.vector_cfg.vtype.vlmul <= 8;
+        if (category == LOAD) {
+          vd + nfields <= 31;
+        }
+        if (category == STORE) {
+          vs3 + nfields <= 31;
+        }
+        // TODO: Check gcc compile issue with nfields == 0
+        nfields > 0;
+      } else {
+        nfields == 0;
+      }
+    }
+  }
+
+## operand_group_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint operand_group_c {
+    if (m_cfg.vector_cfg.vtype.vlmul > 0) {
+      vd  % m_cfg.vector_cfg.vtype.vlmul == 0;
+      vs1 % m_cfg.vector_cfg.vtype.vlmul == 0;
+      vs2 % m_cfg.vector_cfg.vtype.vlmul == 0;
+      vs3 % m_cfg.vector_cfg.vtype.vlmul == 0;
+    }
+  }
+
+## temp_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint temp_c {
+    (vm == 0) -> (vd != 0);
+  }
+
+## va_variant_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint va_variant_c {
+    if (has_va_variant) {
+      va_variant inside {allowed_va_variants};
+    }
+  }
+
+## vector_compress_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vector_compress_c {
+    if (instr_name == VCOMPRESS) {
+      vd != vs2;
+      vd != vs1;
+      (vm == 0) -> (vd != 0);
+    }
+  }
+
+## vector_element_index_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vector_element_index_c {
+    if (instr_name == VID_V) {
+      vs2 == 0;
+      // TODO; Check if this constraint is needed
+      vd != vs2;
+    }
+  }
+
+## vector_gather_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vector_gather_c {
+    if (instr_name == VRGATHER) {
+      vd != vs2;
+      vd != vs1;
+      (vm == 0) -> (vd != 0);
+    }
+  }
+
+## vector_itoa_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vector_itoa_c {
+    if (instr_name == VIOTA_M) {
+      vd != vs2;
+      (vm == 0) -> (vd != 0);
+    }
+  }
+
+## vector_load_store_mask_overlap_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint vector_load_store_mask_overlap_c {
+    // TODO: Check why this is needed?
+    if (category == STORE) {
+      (vm == 0) -> (vs3 != 0);
+      vs2 != vs3;
+    }
+    // 7.8.3 For vector indexed segment loads, the destination vector register groups
+    // cannot overlap the source vectorregister group (specied by vs2), nor can they
+    // overlap the mask register if masked
+    // AMO instruction uses indexed address mode
+    if (format inside {VLX_FORMAT, VAMO_FORMAT}) {
+      vd != vs2;
+    }
+  }
+
+## vector_mask_disable_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint vector_mask_disable_c {
+    // (vm=0) is reserved for below ops
+    if (instr_name inside {VMV, VFMV, VCOMPRESS, VFMV_F_S, VFMV_S_F, VMV_X_S, VMV_S_X,
+                           VMV1R_V, VMV2R_V, VMV4R_V, VMV8R_V}) {
+      vm == 1'b1;
+    }
+  }
+
+## vector_mask_enable_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint vector_mask_enable_c {
+    // Below instruction is always masked
+    if (instr_name inside {VMERGE, VFMERGE, VADC, VSBC}) {
+      vm == 1'b0;
+    }
+  }
+
+## vector_mask_instr_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint vector_mask_instr_c {
+    if (instr_name inside {[VMAND_MM : VMXNOR_MM]}) {
+      vm == 1'b1;
+    }
+  }
+
+## vector_slide_c  (isa/riscv_vector_instr.sv)  [inside/range,cond/impl]
+constraint vector_slide_c {
+    if (instr_name inside {VSLIDEUP, VSLIDE1UP, VSLIDEDOWN, VSLIDE1DOWN}) {
+      vd != vs2;
+      vd != vs1;
+      (vm == 0) -> (vd != 0);
+    }
+  }
+
+## vmask_overlap_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vmask_overlap_c {
+    (vm == 0) && (m_cfg.vector_cfg.vtype.vlmul > 1) -> (vd != 0);
+  }
+
+## vmv_alignment_c  (isa/riscv_vector_instr.sv)  [cond/impl]
+constraint vmv_alignment_c {
+    if (instr_name == VMV2R_V) {
+      int'(vs2) % 2 == 0;
+      int'(vd)  % 2 == 0;
+    }
+    if (instr_name == VMV4R_V) {
+      int'(vs2) % 4 == 0;
+      int'(vd)  % 4 == 0;
+    }
+    if (instr_name == VMV8R_V) {
+      int'(vs2) % 8 == 0;
+      int'(vd)  % 8 == 0;
+    }
+  }
+
+## widening_instr_c  (isa/riscv_vector_instr.sv)  [mul,inside/range,cond/impl,bitslice]
+constraint widening_instr_c {
+    if (is_widening_instr) {
+     // The destination vector register group results are arranged as if both
+     // SEW and LMUL were at twice their current settings.
+     vd % (m_cfg.vector_cfg.vtype.vlmul * 2) == 0;
+     // The destination vector register group cannot overlap a source vector
+     // register group of a different element width (including the mask register if masked)
+     !(vs1 inside {[vd : vd + m_cfg.vector_cfg.vtype.vlmul * 2 - 1]});
+     !(vs2 inside {[vd : vd + m_cfg.vector_cfg.vtype.vlmul * 2 - 1]});
+     (vm == 0) -> (vd != 0);
+     // Double-width result, first source double-width, second source single-width
+     if (va_variant inside {WV, WX}) {
+       vs2 % (m_cfg.vector_cfg.vtype.vlmul * 2) == 0;
+     }
+    }
+  }
+
+## rvc_csr_c  (isa/riscv_zcb_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint rvc_csr_c {
+    //  Registers specified by the three-bit rs1’, rs2’, and rd/rs1’
+    if (format inside {CLB_FORMAT, CSB_FORMAT, CLH_FORMAT, CSH_FORMAT, CU_FORMAT, CA_FORMAT}) {
+      if (has_rs1) {
+        rs1 inside {[S0:A5]};
+      }
+      if (has_rs2) {
+        rs2 inside {[S0:A5]};
+      }
+      if (has_rd) {
+        rd inside {[S0:A5]};
+      }
+    }
+    // CU_FORMAT and CA_FORMAT has rd == rs1
+    if (format inside {CU_FORMAT, CA_FORMAT}) {
+      if (has_rd && has_rs1) {
+        rd == rs1;
+      }
+    }
+  }
+
+## addr_range_c  (riscv_amo_instr_lib.sv)  [foreach,inside/range,bitslice]
+constraint addr_range_c {
+    foreach (offset[i]) {
+      offset[i] inside {[0 : max_offset - 1]};
+    }
+  }
+
+## aligned_amo_c  (riscv_amo_instr_lib.sv)  [foreach,cond/impl,cfg-reactive]
+constraint aligned_amo_c {
+    foreach (offset[i]) {
+      if (XLEN == 32) {
+        offset[i] % 4 == 0;
+      } else {
+        offset[i] % 8 == 0;
+      }
+    }
+  }
+
+## amo_address_mode_c  (riscv_amo_instr_lib.sv)  [relational]
+constraint amo_address_mode_c {
+    // AMO operation uses indexed address mode
+    address_mode == INDEXED;
+  }
+
+## legal_c  (riscv_amo_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_amo == 1;
+    num_mixed_instr inside {[0:15]};
+  }
+
+## num_of_rs1_reg_c  (riscv_amo_instr_lib.sv)  [relational]
+constraint num_of_rs1_reg_c {
+    num_of_rs1_reg == 1;
+  }
+
+## num_of_rs1_reg_c  (riscv_amo_instr_lib.sv)  [solve-order,inside/range,bitslice]
+constraint num_of_rs1_reg_c {
+    solve num_amo before num_of_rs1_reg;
+    num_of_rs1_reg inside {[1 : num_amo]};
+    num_of_rs1_reg < 5;
+  }
+
+## reasonable_c  (riscv_amo_instr_lib.sv)  [solve-order,inside/range,bitslice]
+constraint reasonable_c {
+    solve num_amo before num_mixed_instr;
+    num_amo inside {[1 : 10]};
+    num_mixed_instr inside {[0 : num_amo]};
+  }
+
+## rs1_c  (riscv_amo_instr_lib.sv)  [foreach,unique,solve-order,inside/range,cfg-reactive]
+constraint rs1_c {
+    solve num_of_rs1_reg before rs1_reg;
+    rs1_reg.size() == num_of_rs1_reg;
+    offset.size() == num_of_rs1_reg;
+    foreach (rs1_reg[i]) {
+      !(rs1_reg[i] inside {cfg.reserved_regs, reserved_rd, ZERO});
+    }
+    unique {rs1_reg};
+  }
+
+## legal_c  (riscv_callstack_gen.sv)  [foreach,unique]
+constraint legal_c {
+    unique{sub_program_id};
+    foreach(sub_program_id[i]) {
+      // Cannot call itself, recursive function call is not supported
+      sub_program_id[i] != program_id;
+    }
+  }
+
+## program_stack_level_c  (riscv_callstack_gen.sv)  [foreach,inside/range,cond/impl,bitslice]
+constraint program_stack_level_c {
+    // The stack level is assigned in ascending order to avoid call loop
+    stack_level.size() == program_cnt;
+    stack_level[0] == 0;
+    foreach(stack_level[i]) {
+      if(i > 0) {
+        stack_level[i] inside {[1:program_cnt-1]};
+        stack_level[i] >= stack_level[i-1];
+        stack_level[i] <= stack_level[i-1]+1;
+        stack_level[i] <= max_stack_level;
+      }
+    }
+  }
+
+## avail_regs_c  (riscv_directed_instr_lib.sv)  [foreach,unique,inside/range,cfg-reactive]
+constraint avail_regs_c {
+    unique {avail_regs};
+    foreach(avail_regs[i]) {
+      !(avail_regs[i] inside {cfg.reserved_regs});
+      avail_regs[i] != ZERO;
+    }
+  }
+
+## init_val_c  (riscv_directed_instr_lib.sv)  [solve-order,inside/range,bitslice]
+constraint init_val_c {
+    solve init_val_type before init_val;
+    init_val_type.size() == num_of_avail_regs;
+    init_val.size() == num_of_avail_regs;
+    num_of_instr inside {[15:30]};
+  }
+
+## instr_c  (riscv_directed_instr_lib.sv)  [inside/range,cond/impl,cfg-reactive,bitslice]
+constraint instr_c {
+    !(gpr inside {cfg.reserved_regs, ZERO});
+    imm inside {[-1023:1023]};
+    mixed_instr_cnt inside {[5:10]};
+    if (jump.instr_name inside {C_JR, C_JALR}) {
+      imm == 0;
+    }
+  }
+
+## instr_c  (riscv_directed_instr_lib.sv)  [inside/range,bitslice]
+constraint instr_c {
+    num_of_jump_instr inside {[10:30]};
+  }
+
+## b_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive]
+constraint b_extension_c {
+    if (RV32B inside {supported_isa}) {
+      if (exception inside {kIllegalFunc3, kIllegalFunc7}) {
+        !(opcode inside {7'b0110011, 7'b0010011, 7'b0111011});
+      }
+    }
+  }
+
+## compressed_instr_op_c  (riscv_illegal_instr.sv)  [relational]
+constraint compressed_instr_op_c {
+    c_op != 2'b11;
+  }
+
+## exception_dist_c  (riscv_illegal_instr.sv)  [dist,inside/range,cond/impl,cfg-reactive]
+constraint exception_dist_c {
+    exception dist {
+      kIllegalOpcode           := 3,
+      kIllegalCompressedOpcode := 1,
+      kIllegalFunc3            := 1,
+      kIllegalFunc7            := 1,
+      kReservedCompressedInstr := 1,
+      kHintInstr               := 3,
+      kIllegalSystemInstr      := 3
+    };
+    if (!(RV32C inside {supported_isa})) {
+      exception != kHintInstr;
+      compressed == 1'b0;
+    }
+  }
+
+## exception_type_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl]
+constraint exception_type_c {
+    if (compressed) {
+      exception inside {kReservedCompressedInstr, kIllegalCompressedOpcode, kHintInstr};
+    } else {
+      exception inside {kIllegalOpcode, kIllegalFunc3, kIllegalFunc7, kIllegalSystemInstr};
+    }
+    if (!has_func7) {
+      exception != kIllegalFunc7;
+    }
+    if (!has_func3) {
+      exception != kIllegalFunc3;
+    }
+  }
+
+## has_func3_c  (riscv_illegal_instr.sv)  [solve-order,inside/range,cond/impl]
+constraint has_func3_c {
+    solve opcode before func7;
+    if ((opcode inside {7'b0110111, 7'b1101111, 7'b0010111})) {
+      has_func3 == 1'b0;
+    } else {
+      has_func3 == 1'b1;
+    }
+  }
+
+## has_func7_c  (riscv_illegal_instr.sv)  [solve-order,inside/range,cond/impl]
+constraint has_func7_c {
+    solve opcode before func7;
+    if (((opcode == 7'b0010011) && (func3 inside {3'b001, 3'b101})) ||
+        (opcode inside {7'b0110011, 7'b0111011})) {
+      has_func7 == 1'b1;
+    } else {
+      has_func7 == 1'b0;
+    }
+  }
+
+## hint_instr_c  (riscv_illegal_instr.sv)  [cond/impl,bitslice]
+constraint hint_instr_c {
+    if (exception == kHintInstr) {
+      // C.ADDI
+      ((c_msb == 3'b000) && (c_op == 2'b01) && ({instr_bin[12], instr_bin[6:2]} == 6'b0)) ||
+      // C.LI
+      ((c_msb == 3'b010) && (c_op == 2'b01) && (instr_bin[11:7] == 5'b0)) ||
+      // C.SRAI64, C.SRLI64
+      ((c_msb == 3'b100) && (c_op == 2'b01) && (instr_bin[12:11] == 2'b00) &&
+                                               (instr_bin[6:2] == 5'b0)) ||
+      // C.MV
+      ((c_msb == 3'b100) && (c_op == 2'b10) && (instr_bin[11:7] == 0) &&
+                                               (instr_bin[6:2]  != 0)) ||
+      // C.LUI
+      ((c_msb == 3'b011) && (c_op == 2'b01) && (instr_bin[11:7] == 5'b0) &&
+                                               ({instr_bin[12], instr_bin[6:2]} != 6'b0)) ||
+      // C.SLLI
+      ((c_msb == 3'b000) && (c_op == 2'b10) && (instr_bin[11:7] == 5'b0))  ||
+      // C.SLLI64
+      ((c_msb == 3'b000) && (c_op == 2'b10) && (instr_bin[11:7] != 5'b0) && !instr_bin[12] &&
+                                               (instr_bin[6:2] == 0))  ||
+      // C.ADD
+      ((c_msb == 3'b100) && (c_op == 2'b10) && (instr_bin[11:7] == 5'b0) && instr_bin[12] &&
+                                               (instr_bin[6:2] != 0));
+    }
+  }
+
+## illegal_compressed_op_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl]
+constraint illegal_compressed_op_c {
+    if (exception == kIllegalCompressedOpcode) {
+      c_op != 2'b01;
+      if (legal_c00_opcode.size() == 8) {
+        c_op != 2'b00;
+      } else {
+        !(c_msb inside {legal_c00_opcode});
+      }
+      if (legal_c10_opcode.size() == 8) {
+        c_op != 2'b10;
+      } else {
+        !(c_msb inside {legal_c10_opcode});
+      }
+    }
+  }
+
+## illegal_func3_c  (riscv_illegal_instr.sv)  [solve-order,inside/range,cond/impl,cfg-reactive]
+constraint illegal_func3_c {
+    solve opcode before func3;
+    if (!compressed) {
+      if (exception == kIllegalFunc3) {
+        (opcode == 7'b1100111) -> (func3 != 3'b000);
+        (opcode == 7'b1100011) -> (func3 inside {3'b010, 3'b011});
+
+        if (XLEN == 32) {
+          (opcode == 7'b0100011) -> (func3 >= 3'b011);
+          (opcode == 7'b0000011) -> (func3 inside {3'b011, 3'b111});
+        } else {
+          (opcode == 7'b0100011) -> (func3 > 3'b011);
+          (opcode == 7'b0000011) -> (func3 == 3'b111);
+        }
+        (opcode == 7'b0001111) -> (!(func3 inside {3'b000, 3'b001}));
+        (opcode == 7'b1110011) -> (func3 == 3'b100);
+        (opcode == 7'b0011011) -> (!(func3 inside {3'b000, 3'b001, 3'b101}));
+        (opcode == 7'b0111011) -> (func3 inside {3'b010, 3'b011});
+        opcode inside {7'b1100111, 7'b1100011, 7'b0000011, 7'b0100011,
+                       7'b0001111, 7'b1110011, 7'b0011011, 7'b0111011};
+      } else {
+        (opcode == 7'b1100111) -> (func3 == 3'b000);
+        (opcode == 7'b1100011) -> (!(func3 inside {3'b010, 3'b011}));
+        if (XLEN == 32) {
+          (opcode == 7'b0100011) -> (func3 < 3'b011);
+          (opcode == 7'b0000011) -> !(func3 inside {3'b011, 3'b111});
+        } else {
+          (opcode == 7'b0100011) -> (func3 <= 3'b011);
+          (opcode == 7'b0000011) -> (func3 != 3'b111);
+        }
+        (opcode == 7'b0001111) -> (func3 inside {3'b000, 3'b001});
+        (opcode == 7'b1110011) -> (func3 != 3'b100);
+        (opcode == 7'b0011011) -> (func3 inside {3'b000, 3'b001, 3'b101});
+        (opcode == 7'b0111011) -> (!(func3 inside {3'b010, 3'b011}));
+      }
+    }
+  }
+
+## illegal_func7_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint illegal_func7_c {
+    if (!compressed) {
+      if (exception == kIllegalFunc7) {
+        !(func7 inside {7'd0, 7'b0100000, 7'd1});
+        if (opcode == 7'b0001001) { // SLLI, SRLI, SRAI
+          !(func7[6:1] inside {6'd0, 6'b010000});
+        }
+      } else {
+        func7 inside {7'd0, 7'b0100000, 7'd1};
+      }
+    }
+  }
+
+## illegal_opcode_c  (riscv_illegal_instr.sv)  [solve-order,inside/range,cond/impl,bitslice]
+constraint illegal_opcode_c {
+    solve opcode before instr_bin;
+    if (exception == kIllegalOpcode) {
+      !(opcode inside {legal_opcode});
+      opcode[1:0] == 2'b11;
+    } else {
+      opcode inside {legal_opcode};
+    }
+  }
+
+## instr_bit_assignment_c  (riscv_illegal_instr.sv)  [solve-order,cond/impl,bitslice]
+constraint instr_bit_assignment_c {
+    solve opcode before instr_bin;
+    solve func3 before instr_bin;
+    solve func7 before instr_bin;
+    solve c_msb before instr_bin;
+    solve c_op before instr_bin;
+    if (compressed) {
+      instr_bin[1:0] == c_op;
+      instr_bin[15:13] == c_msb;
+    } else {
+      instr_bin[6:0] == opcode;
+      if (has_func7) {
+        instr_bin[31:25] == func7;
+      }
+      if (has_func3) {
+        instr_bin[14:12] == func3;
+      }
+    }
+  }
+
+## legal_rv32_c_slli  (riscv_illegal_instr.sv)  [cond/impl,cfg-reactive]
+constraint legal_rv32_c_slli {
+    if ((c_msb == 3'b000) && (c_op == 2'b10) && (XLEN == 32)) {
+      if (exception == kReservedCompressedInstr) {
+        instr_bin[12] == 1;
+      } else {
+        instr_bin[12] == 0;
+      }
+    }
+  }
+
+## no_atomic_c  (riscv_illegal_instr.sv)  [cond/impl]
+constraint no_atomic_c {
+    if (exception != kIllegalOpcode) {
+      opcode != 7'b0101111;
+    }
+  }
+
+## reserved_compressed_instr_c  (riscv_illegal_instr.sv)  [solve-order,cond/impl,cfg-reactive,bitslice]
+constraint reserved_compressed_instr_c {
+    solve exception  before reserved_c;
+    solve exception  before opcode;
+    solve reserved_c before instr_bin;
+    solve reserved_c before c_msb;
+    solve reserved_c before c_op;
+    if (XLEN == 32) {
+      //c.addiw is RV64/RV128 only instruction, the encoding is used for C.JAL for RV32C
+      reserved_c != kReservedAddiw;
+    }
+    if (exception == kReservedCompressedInstr) {
+      (reserved_c == kIllegalCompressed) -> (instr_bin[15:0] == 0);
+      (reserved_c == kReservedAddispn)   -> ((instr_bin[15:5] == '0) && (c_op == 2'b00));
+      (reserved_c == kReservedAddiw)     -> ((c_msb == 3'b001) && (c_op == 2'b01) &&
+                                             (instr_bin[11:7] == 5'b0));
+      (reserved_c == kReservedC0)        -> ((instr_bin[15:10] == 6'b100111) &&
+                                             (instr_bin[6:5] == 2'b10) && (c_op == 2'b01));
+      (reserved_c == kReservedC1)        -> ((instr_bin[15:10] == 6'b100111) &&
+                                             (instr_bin[6:5] == 2'b11) && (c_op == 2'b01));
+      (reserved_c == kReservedC2)        -> ((c_msb == 3'b100) && (c_op == 2'b00));
+      (reserved_c == kReservedAddi16sp)  -> ((c_msb == 3'b011) && (c_op == 2'b01) &&
+                                             (instr_bin[11:7] == 2) &&
+                                             !instr_bin[12] && (instr_bin[6:2] == 0));
+      (reserved_c == kReservedLui)       -> ((c_msb == 3'b011) && (c_op == 2'b01) &&
+                                             !instr_bin[12] && (instr_bin[6:2] == 0));
+      (reserved_c == kReservedJr)        -> (instr_bin == 16'b1000_0000_0000_0010);
+      (reserved_c == kReservedLqsp)      -> ((c_msb == 3'b001) && (c_op == 2'b10) &&
+                                             (instr_bin[11:7] == 5'b0));
+      (reserved_c == kReservedLwsp)      -> ((c_msb == 3'b010) && (c_op == 2'b10) &&
+                                             (instr_bin[11:7] == 5'b0));
+      (reserved_c == kReservedLdsp)      -> ((c_msb == 3'b011) && (c_op == 2'b10) &&
+                                             (instr_bin[11:7] == 5'b0));
+    }
+  }
+
+## system_instr_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,bitslice]
+constraint system_instr_c {
+    if (exception == kIllegalSystemInstr) {
+      opcode == 7'b1110011;
+      // ECALL/EBREAK/xRET/WFI
+      if (func3 == 3'b000) {
+        // Constrain RS1 and RD to be non-zero
+        instr_bin[19:15] != 0;
+        instr_bin[11:7] != 0;
+        // Valid SYSTEM instructions considered by this
+        // Constrain the upper 12 bits to be invalid
+        !(instr_bin[31:20] inside {12'h0, 12'h1, 12'h2, 12'h102, 12'h302, 12'h7b2, 12'h105});
+      } else {
+        // Invalid CSR instructions
+        !(instr_bin[31:20] inside {csrs});
+        !(instr_bin[31:20] inside {custom_csr});
+      }
+    }
+  }
+
+## zba_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive]
+constraint zba_extension_c {
+    if (RV32ZBA inside {supported_isa}) {
+      if (exception inside {kIllegalFunc3, kIllegalFunc7}) {
+        !(opcode inside {7'b0110011, 7'b0111011, 7'b0011011});
+      }
+    }
+  }
+
+## zbb_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive]
+constraint zbb_extension_c {
+    if (RV32ZBB inside {supported_isa}) {
+      if (exception inside {kIllegalFunc3, kIllegalFunc7}) {
+        !(opcode inside {7'b0110011, 7'b0010011, 7'b0111011, 7'b0011011});
+      }
+    }
+  }
+
+## zbc_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive]
+constraint zbc_extension_c {
+    if (RV32ZBB inside {supported_isa}) {
+      if (exception inside {kIllegalFunc3, kIllegalFunc7}) {
+        !(opcode inside {7'b0110011});
+      }
+    }
+  }
+
+## zbs_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive]
+constraint zbs_extension_c {
+    if (RV32ZBS inside {supported_isa}) {
+      if (exception inside {kIllegalFunc3, kIllegalFunc7}) {
+        !(opcode inside {7'b0110011, 7'b0010011});
+      }
+    }
+  }
+
+## zcb_extension_c  (riscv_illegal_instr.sv)  [inside/range,cond/impl,cfg-reactive,bitslice]
+constraint zcb_extension_c {
+    // zcb adds instructions to the reserved funct6 space 6'b100111
+    // this constraint defines the subset of that op-code space which is still
+    // reserved. Only way to trigger this constraint should be with
+    // kReservedC0/C1 or by kIllegalCompressedOpcode. Since the reserved
+    // instructions at c_msb = 3'b100 && c_op = 2'b00 are not added to
+    // legal_c00_opcode this combination could occur.
+    if (RV32ZCB inside {supported_isa}) {
+      if (exception inside {kIllegalCompressedOpcode, kReservedCompressedInstr}
+          && c_msb == 3'b100) {
+        if (c_op == 2'b00) {
+          !(instr_bin[12:10] inside {3'b000, 3'b001, 3'b010, 3'b011}); //load/store
+        // bits 9:2 don't have any inavlid combinations, hence only bit 12:10
+        // can yield an op-code which is reserved.
+        } else if (c_op == 2'b01 && instr_bin[12:10] == 3'b111) {
+          // if funct2 = 2'b10 there are no reserved op-codes
+         !(instr_bin[6:5] inside {2'b10}); //funct2
+         if (instr_bin[6:5] == 2'b11) {
+           if (XLEN == 32){
+             // c.zext.w not allowed in 32-bit mode
+             (instr_bin[4:2] inside {3'b100, 3'b110, 3'b111});
+           } else {
+             // reserved opcodes
+             (instr_bin[4:2] inside {3'b110, 3'b111});
+           }
+         }
+        }
+      }
+    }
+  }
+
+## addr_translaction_c  (riscv_instr_gen_config.sv)  [cond/impl]
+constraint addr_translaction_c {
+    if ((init_privileged_mode != MACHINE_MODE) && (SATP_MODE != BARE)) {
+      virtual_addr_translation_on == 1'b1;
+    } else {
+      virtual_addr_translation_on == 1'b0;
+    }
+  }
+
+## addr_translaction_rnd_order_c  (riscv_instr_gen_config.sv)  [solve-order]
+constraint addr_translaction_rnd_order_c {
+    solve init_privileged_mode before virtual_addr_translation_on;
+  }
+
+## boot_privileged_mode_dist_c  (riscv_instr_gen_config.sv)  [dist,cond/impl,cfg-reactive,bitslice]
+constraint boot_privileged_mode_dist_c {
+    // Boot to higher privileged mode more often
+    if(riscv_instr_pkg::supported_privileged_mode.size() == 2) {
+      init_privileged_mode dist {riscv_instr_pkg::supported_privileged_mode[0] := 6,
+                                 riscv_instr_pkg::supported_privileged_mode[1] := 4};
+    } else if (riscv_instr_pkg::supported_privileged_mode.size() == 3) {
+      init_privileged_mode dist {riscv_instr_pkg::supported_privileged_mode[0] := 4,
+                                 riscv_instr_pkg::supported_privileged_mode[1] := 3,
+                                 riscv_instr_pkg::supported_privileged_mode[2] := 3};
+    } else {
+      init_privileged_mode == riscv_instr_pkg::supported_privileged_mode[0];
+    }
+  }
+
+## debug_mode_c  (riscv_instr_gen_config.sv)  [foreach,inside/range,cond/impl,bitslice]
+constraint debug_mode_c {
+      if (riscv_instr_pkg::support_debug_mode) {
+        debug_program_instr_cnt inside {[100 : 300]};
+        foreach(debug_sub_program_instr_cnt[i]) {
+          debug_sub_program_instr_cnt[i] inside {[100 : 300]};
+        }
+      }
+    `ifndef DSIM
+       main_program_instr_cnt + sub_program_instr_cnt.sum() == instr_cnt;
+    `else
+       // dsim has some issue supporting sum(), use some approximate constraint to generate
+       // instruction cnt
+       if (num_of_sub_program > 0) {
+         main_program_instr_cnt inside {[10:instr_cnt/2]};
+         foreach (sub_program_instr_cnt[i]) {
+           sub_program_instr_cnt[i] inside {[10:instr_cnt/num_of_sub_program]};
+         }
+       } else {
+         main_program_instr_cnt == instr_cnt;
+       }
+    `endif
+  }
+
+## debug_single_step_c  (riscv_instr_gen_config.sv)  [inside/range,cond/impl,bitslice]
+constraint debug_single_step_c {
+    if (enable_debug_single_step) {
+      single_step_iterations inside {[10 : 50]};
+    }
+  }
+
+## default_c  (riscv_instr_gen_config.sv)  [foreach,inside/range,cond/impl,bitslice]
+constraint default_c {
+    sub_program_instr_cnt.size() == num_of_sub_program;
+    debug_sub_program_instr_cnt.size() == num_debug_sub_program;
+    main_program_instr_cnt inside {[10 : instr_cnt]};
+    foreach(sub_program_instr_cnt[i]) {
+      sub_program_instr_cnt[i] inside {[10 : instr_cnt]};
+    }
+    // Disable sfence if the program is not boot to supervisor mode
+    // If sfence exception is allowed, we can enable sfence instruction in any priviledged mode.
+    // When MSTATUS.TVM is set, executing sfence.vma will be treate as illegal instruction
+    if(allow_sfence_exception) {
+      enable_sfence == 1'b1;
+      (init_privileged_mode != SUPERVISOR_MODE) || (mstatus_tvm == 1'b1);
+    } else {
+      (init_privileged_mode != SUPERVISOR_MODE || !riscv_instr_pkg::support_sfence || mstatus_tvm
+          || no_fence) -> (enable_sfence == 1'b0);
+    }
+  }
+
+## delegation_c  (riscv_instr_gen_config.sv)  [foreach,inside/range,cond/impl]
+constraint delegation_c {
+    foreach(m_mode_exception_delegation[i]) {
+      if(!support_supervisor_mode || no_delegation) {
+        m_mode_exception_delegation[i] == 0;
+      }
+      if(!(i inside {INSTRUCTION_ADDRESS_MISALIGNED, BREAKPOINT, ECALL_UMODE,
+                     INSTRUCTION_PAGE_FAULT, LOAD_PAGE_FAULT, STORE_AMO_PAGE_FAULT})) {
+        m_mode_exception_delegation[i] == 0;
+      }
+    }
+    foreach(m_mode_interrupt_delegation[i]) {
+      if(!support_supervisor_mode || no_delegation) {
+        m_mode_interrupt_delegation[i] == 0;
+      }
+      if(!(i inside {S_SOFTWARE_INTR, S_TIMER_INTR, S_EXTERNAL_INTR})) {
+        m_mode_interrupt_delegation[i] == 0;
+      }
+    }
+  }
+
+## exception_delegation_c  (riscv_instr_gen_config.sv)  [foreach,cond/impl]
+constraint exception_delegation_c {
+    // Do not delegate instructino page fault to supervisor/user mode because this may introduce
+    // dead loop. All the subsequent instruction fetches may fail and program cannot recover.
+    m_mode_exception_delegation[INSTRUCTION_PAGE_FAULT] == 1'b0;
+    if(force_m_delegation) {
+      foreach(m_mode_exception_delegation[i]) {
+        soft m_mode_exception_delegation[i] == 1'b1;
+      }
+      foreach(m_mode_interrupt_delegation[i]) {
+        soft m_mode_interrupt_delegation[i] == 1'b1;
+      }
+    }
+    if(force_s_delegation) {
+      foreach(s_mode_exception_delegation[i]) {
+        soft s_mode_exception_delegation[i] == 1'b1;
+      }
+      foreach(s_mode_interrupt_delegation[i]) {
+        soft s_mode_interrupt_delegation[i] == 1'b1;
+      }
+    }
+  }
+
+## floating_point_c  (riscv_instr_gen_config.sv)  [cond/impl]
+constraint floating_point_c {
+    if (enable_floating_point) {
+      mstatus_fs == 2'b01;
+    } else {
+      mstatus_fs == 2'b00;
+    }
+  }
+
+## gpr_c  (riscv_instr_gen_config.sv)  [foreach,unique,inside/range]
+constraint gpr_c {
+    foreach (gpr[i]) {
+      !(gpr[i] inside {sp, tp, scratch_reg, pmp_reg, ZERO, RA, GP});
+    }
+    unique {gpr};
+  }
+
+## mstatus_c  (riscv_instr_gen_config.sv)  [cond/impl]
+constraint mstatus_c {
+    if (set_mstatus_mprv) {
+      mstatus_mprv == 1'b1;
+    } else {
+      mstatus_mprv == 1'b0;
+    }
+    if (SATP_MODE == BARE) {
+      mstatus_mxr == 0;
+      mstatus_sum == 0;
+      mstatus_tvm == 0;
+    }
+  }
+
+## mstatus_vs_c  (riscv_instr_gen_config.sv)  [cond/impl]
+constraint mstatus_vs_c {
+    if (enable_vector_extension) {
+      mstatus_vs == 2'b01;
+    } else {
+      mstatus_vs == 2'b00;
+    }
+  }
+
+## mtvec_c  (riscv_instr_gen_config.sv)  [mul,inside/range,cond/impl,cfg-reactive]
+constraint mtvec_c {
+    mtvec_mode inside {supported_interrupt_mode};
+    if (mtvec_mode == DIRECT) {
+     soft tvec_alignment == 2;
+    } else {
+     // Setting MODE = Vectored may impose an additional alignmentconstraint on BASE,
+     // requiring up to 4×XLEN-byte alignment
+     soft tvec_alignment == $clog2((XLEN * 4) / 8);
+    }
+  }
+
+## ra_c  (riscv_instr_gen_config.sv)  [dist,bitslice]
+constraint ra_c {
+    ra dist {RA := 3, T1 := 2, [SP:T0] :/ 1, [T2:T6] :/ 4};
+    ra != sp;
+    ra != tp;
+    ra != ZERO;
+  }
+
+## reserve_pmp_reg_c  (riscv_instr_gen_config.sv)  [foreach,unique,inside/range]
+constraint reserve_pmp_reg_c {
+    foreach (pmp_reg[i]) {
+      !(pmp_reg[i] inside {ZERO, sp, tp, scratch_reg});
+    }
+    unique {pmp_reg};
+  }
+
+## reserve_scratch_reg_c  (riscv_instr_gen_config.sv)  [inside/range]
+constraint reserve_scratch_reg_c {
+    !(scratch_reg inside {ZERO, sp, tp, ra, GP});
+  }
+
+## sp_tp_c  (riscv_instr_gen_config.sv)  [inside/range,cond/impl]
+constraint sp_tp_c {
+    if (fix_sp) {
+      sp == SP;
+    }
+    sp != tp;
+    !(sp inside {GP, RA, ZERO});
+    !(tp inside {GP, RA, ZERO});
+  }
+
+## addr_c  (riscv_load_store_instr_lib.sv)  [foreach,solve-order,inside/range,cond/impl,bitslice]
+constraint addr_c {
+    solve data_page_id before max_load_store_offset;
+    solve max_load_store_offset before base;
+    data_page_id < max_data_page_id;
+    foreach (data_page[i]) {
+      if (i == data_page_id) {
+        max_load_store_offset == data_page[i].size_in_bytes;
+      }
+    }
+    base inside {[0 : max_load_store_offset-1]};
+  }
+
+## addr_offset_c  (riscv_load_store_instr_lib.sv)  [cfg-reactive,bitslice]
+constraint addr_offset_c {
+    |addr_offset[XLEN-1:20] == 1'b1;
+    // TODO(taliu) Support larger address range
+    addr_offset[XLEN-1:31] == 0;
+    addr_offset[11:0] == 0;
+  }
+
+## default_c  (riscv_load_store_instr_lib.sv)  [foreach,unique,inside/range,cfg-reactive]
+constraint default_c {
+    foreach(data_page_id[i]) {
+      data_page_id[i] < max_data_page_id;
+    }
+    data_page_id.size() == num_of_instr_stream;
+    rs1_reg.size() == num_of_instr_stream;
+    unique {rs1_reg};
+    foreach(rs1_reg[i]) {
+      !(rs1_reg[i] inside {cfg.reserved_regs, ZERO});
+    }
+  }
+
+## eew_c  (riscv_load_store_instr_lib.sv)  [inside/range,cfg-reactive]
+constraint eew_c {
+    eew inside {cfg.vector_cfg.legal_eew};
+  }
+
+## hazard_ratio_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint hazard_ratio_c {
+    hazard_ratio inside {[20:100]};
+  }
+
+## index_addr_c  (riscv_load_store_instr_lib.sv)  [solve-order,inside/range,bitslice]
+constraint index_addr_c {
+    solve eew before index_addr;
+    // Keep a reasonable index address range to avoid vector memory address overflow
+    index_addr inside {[0 : 128]};
+    index_addr % (eew / 8) == 1;
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [relational]
+constraint legal_c {
+    num_load_store == 1;
+    num_mixed_instr < 5;
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_load_store inside {[min_instr_cnt:max_instr_cnt]};
+    num_mixed_instr == 0;
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_load_store inside {[10:30]};
+    num_mixed_instr inside {[10:30]};
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_load_store inside {[10:30]};
+    num_mixed_instr inside {[10:30]};
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_load_store inside {[10:20]};
+    num_mixed_instr inside {[1:7]};
+  }
+
+## legal_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint legal_c {
+    num_load_store inside {[5:10]};
+    num_mixed_instr inside {[5:10]};
+  }
+
+## page_c  (riscv_load_store_instr_lib.sv)  [unique,solve-order,inside/range,bitslice]
+constraint page_c {
+    solve num_of_instr_stream before data_page_id;
+    num_of_instr_stream inside {[1 : max_data_page_id]};
+    unique {data_page_id};
+  }
+
+## page_c  (riscv_load_store_instr_lib.sv)  [foreach,inside/range,cond/impl,bitslice]
+constraint page_c {
+    num_of_instr_stream inside {[2:5]};
+    foreach (data_page_id[i]) {
+      if (i > 0) {
+        data_page_id[i] == data_page_id[i-1];
+      }
+    }
+  }
+
+## reasonable_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint reasonable_c {
+    num_of_instr_stream inside {[2:8]};
+  }
+
+## rs1_c  (riscv_load_store_instr_lib.sv)  [inside/range,cfg-reactive]
+constraint rs1_c {
+    !(rs1_reg inside {cfg.reserved_regs, reserved_rd, ZERO});
+  }
+
+## sp_c  (riscv_load_store_instr_lib.sv)  [dist,cond/impl]
+constraint sp_c {
+    use_sp_as_rs1 dist {1 := 1, 0 := 2};
+    if (use_sp_as_rs1) {
+      rs1_reg == SP;
+    }
+  }
+
+## sp_rnd_order_c  (riscv_load_store_instr_lib.sv)  [solve-order]
+constraint sp_rnd_order_c {
+    solve use_sp_as_rs1 before rs1_reg;
+  }
+
+## stride_byte_offset_c  (riscv_load_store_instr_lib.sv)  [solve-order,inside/range,bitslice]
+constraint stride_byte_offset_c {
+    solve eew before stride_byte_offset;
+    // Keep a reasonable byte offset range to avoid vector memory address overflow
+    stride_byte_offset inside {[1 : 128]};
+    stride_byte_offset % (eew / 8) == 1;
+  }
+
+## vec_data_page_id_c  (riscv_load_store_instr_lib.sv)  [relational]
+constraint vec_data_page_id_c {
+    data_page_id < max_data_page_id;
+  }
+
+## vec_mixed_instr_c  (riscv_load_store_instr_lib.sv)  [inside/range,bitslice]
+constraint vec_mixed_instr_c {
+    num_mixed_instr inside {[0:10]};
+  }
+
+## vec_rs_c  (riscv_load_store_instr_lib.sv)  [inside/range,cfg-reactive]
+constraint vec_rs_c {
+    !(rs1_reg inside {cfg.reserved_regs, reserved_rd, ZERO});
+    !(rs2_reg inside {cfg.reserved_regs, reserved_rd, ZERO});
+    rs1_reg != rs2_reg;
+  }
+
+## legal_loop_regs_c  (riscv_loop_instr.sv)  [foreach,unique,solve-order,cfg-reactive]
+constraint legal_loop_regs_c {
+    solve num_of_nested_loop before loop_cnt_reg;
+    solve num_of_nested_loop before loop_limit_reg;
+    foreach (loop_cnt_reg[i]) {
+      loop_cnt_reg[i] != ZERO;
+      foreach (cfg.reserved_regs[j]) {
+        loop_cnt_reg[i] != cfg.reserved_regs[j];
+      }
+    }
+    foreach (loop_limit_reg[i]) {
+      foreach (cfg.reserved_regs[j]) {
+        loop_limit_reg[i] != cfg.reserved_regs[j];
+      }
+    }
+    unique {loop_cnt_reg, loop_limit_reg};
+    loop_cnt_reg.size() == num_of_nested_loop;
+    loop_limit_reg.size() == num_of_nested_loop;
+  }
+
+## loop_c  (riscv_loop_instr.sv)  [foreach,solve-order,inside/range,cond/impl,cfg-reactive,bitslice]
+constraint loop_c {
+    solve num_of_nested_loop before loop_init_val;
+    solve num_of_nested_loop before loop_step_val;
+    solve num_of_nested_loop before loop_limit_val;
+    solve loop_limit_val before loop_limit_reg;
+    solve branch_type before loop_init_val;
+    solve branch_type before loop_step_val;
+    solve branch_type before loop_limit_val;
+    num_of_instr_in_loop inside {[1:25]};
+    num_of_nested_loop inside {[1:2]};
+    loop_init_val.size() == num_of_nested_loop;
+    loop_step_val.size() == num_of_nested_loop;
+    loop_limit_val.size() == num_of_nested_loop;
+    branch_type.size() == num_of_nested_loop;
+    foreach (branch_type[i]) {
+      if (!cfg.disable_compressed_instr) {
+        branch_type[i] inside {C_BNEZ, C_BEQZ, BEQ, BNE, BLTU, BLT, BGEU, BGE};
+      } else {
+        branch_type[i] inside {BEQ, BNE, BLTU, BLT, BGEU, BGE};
+      }
+    }
+    foreach(loop_init_val[i]) {
+      if (branch_type[i] inside {C_BNEZ, C_BEQZ}) {
+        loop_limit_val[i] == 0;
+        loop_limit_reg[i] == ZERO;
+        loop_cnt_reg[i] inside {riscv_instr_pkg::compressed_gpr};
+      } else {
+        loop_limit_val[i] inside {[-20:20]};
+        loop_limit_reg[i] != ZERO;
+      }
+      if (branch_type[i] inside {C_BNEZ, C_BEQZ, BEQ, BNE}) {
+        ((loop_limit_val[i] - loop_init_val[i]) % loop_step_val[i] == 0) &&
+        (loop_limit_val[i] != loop_init_val[i]);
+      } else if (branch_type[i] == BGE) {
+        loop_step_val[i] < 0;
+      } else if (branch_type[i] == BGEU) {
+        loop_step_val[i] < 0;
+        loop_init_val[i] > 0;
+        // Avoid count to negative
+        loop_step_val[i] + loop_limit_val[i] > 0;
+      } else if (branch_type[i] == BLT) {
+        loop_step_val[i] > 0;
+      } else if (branch_type[i] == BLTU) {
+        loop_step_val[i] > 0;
+        loop_limit_val[i] > 0;
+      }
+      loop_init_val[i]  inside {[-10:10]};
+      loop_step_val[i]  inside {[-10:10]};
+      if(loop_init_val[i] < loop_limit_val[i]) {
+        loop_step_val[i] > 0;
+      } else {
+        loop_step_val[i] < 0;
+      }
+    }
+  }
+
+## access_dirty_bit_c  (riscv_page_table_entry.sv)  [relational]
+constraint access_dirty_bit_c {
+    soft a    == 1'b1;
+    soft d    == 1'b1;
+  }
+
+## ppn_zero_c  (riscv_page_table_entry.sv)  [relational]
+constraint ppn_zero_c {
+    soft ppn0 == '0;
+    soft ppn1 == '0;
+    soft ppn2 == '0;
+    soft ppn3 == '0;
+  }
+
+## reserved_bits_c  (riscv_page_table_entry.sv)  [relational]
+constraint reserved_bits_c {
+    soft rsw  == '0;
+    soft rsvd == '0;
+  }
+
+## sw_legal_c  (riscv_page_table_entry.sv)  [cond/impl]
+constraint sw_legal_c {
+    // If the PTE is not a leaf page, U,A,D must be cleared by SW for future compatibility
+    if(xwr == NEXT_LEVEL_PAGE) {
+      u == 1'b0;
+      a == 1'b0;
+      d == 1'b0;
+    }
+  }
+
+## exception_ratio_c  (riscv_page_table_exception_cfg.sv)  [dist,cond/impl]
+constraint exception_ratio_c {
+    if(enable_exception) {
+      allow_page_access_control_exception  dist { 1 := page_access_fault_ratio,
+                                                  0 := 100 - page_access_fault_ratio };
+      allow_superpage_misaligned_exception dist { 1 := misaligned_superpage_ratio,
+                                                  0 := 100 - misaligned_superpage_ratio };
+      allow_leaf_link_page_exception       dist { 1 := leaf_link_page_ratio,
+                                                  0 := 100 - leaf_link_page_ratio };
+      allow_invalid_page_exception         dist { 1 := invalid_page_ratio,
+                                                  0 := 100 - invalid_page_ratio };
+      allow_privileged_mode_exception      dist { 1 := privl_mode_fault_ratio,
+                                                  0 := 100 - privl_mode_fault_ratio };
+      allow_zero_access_bit_exception      dist { 1 := zero_access_fault_ratio,
+                                                  0 := 100 - zero_access_fault_ratio };
+      allow_zero_dirty_bit_exception       dist { 1 := zero_dirty_fault_ratio,
+                                                  0 := 100 - zero_dirty_fault_ratio };
+    } else {
+      allow_page_access_control_exception  == 0;
+      allow_superpage_misaligned_exception == 0;
+      allow_leaf_link_page_exception       == 0;
+      allow_invalid_page_exception         == 0;
+      allow_privileged_mode_exception      == 0;
+      allow_zero_access_bit_exception      == 0;
+      allow_zero_dirty_bit_exception       == 0;
+    }
+  }
+
+## page_table_exception_handling_reg_c  (riscv_page_table_list.sv)  [unique,inside/range,cfg-reactive]
+constraint page_table_exception_handling_reg_c {
+    unique {level_reg, fault_vaddr_reg, pte_addr_reg,
+            pte_reg, tmp_reg, mask_reg, mpp_reg};
+    !(level_reg inside {cfg.reserved_regs, ZERO});
+    !(fault_vaddr_reg inside {cfg.reserved_regs, ZERO});
+    !(pte_addr_reg inside {cfg.reserved_regs, ZERO});
+    !(pte_reg inside {cfg.reserved_regs, ZERO});
+    !(mask_reg inside {cfg.reserved_regs, ZERO});
+    !(mpp_reg inside {cfg.reserved_regs, ZERO});
+    !(tmp_reg inside {cfg.reserved_regs, ZERO});
+  }
+
+## addr_legal_tor_c  (riscv_pmp_cfg.sv)  [foreach,cond/impl,cfg-reactive,bitslice]
+constraint addr_legal_tor_c {
+    foreach (pmp_cfg[i]) {
+      // In case illegal TOR regions are disallowed always add the constraint, otherwise make the
+      // remove the constraint for 1 in every XLEN entries.
+      if (i > 0 && pmp_cfg[i].a == TOR && (!pmp_allow_illegal_tor || pmp_cfg[i].addr_mode > 0)) {
+        pmp_cfg[i].addr > pmp_cfg[i-1].addr;
+      }
+
+      if (!allow_high_addrs) {
+        pmp_cfg[i].addr[31:29] == '0;
+      }
+    }
+  }
+
+## addr_na4_mode_c  (riscv_pmp_cfg.sv)  [foreach,cond/impl,bitslice]
+constraint addr_na4_mode_c {
+    foreach (pmp_cfg[i]) {
+      if (pmp_cfg[i].a == NA4) {
+        if (!allow_high_addrs) {
+          pmp_cfg[i].addr[31:29] == '0;
+        }
+      }
+    }
+  }
+
+## addr_napot_mode_c  (riscv_pmp_cfg.sv)  [foreach,cond/impl,cfg-reactive,bitslice]
+constraint addr_napot_mode_c {
+    foreach (pmp_cfg[i]) {
+      // In case NAPOT is selected make sure that we randomly select a region mode and force the
+      // address to match that mode.
+      if (pmp_cfg[i].a == NAPOT) {
+        // Make sure the bottom addr_mode - 1 bits are set to 1.
+        (pmp_cfg[i].addr & ((1 << pmp_cfg[i].addr_mode) - 1)) == ((1 << pmp_cfg[i].addr_mode) - 1);
+        if (pmp_cfg[i].addr_mode < XLEN) {
+          // Unless the largest region is selected make sure the bit just before the ones is set to 0.
+          (pmp_cfg[i].addr & (1 << pmp_cfg[i].addr_mode)) == 0;
+        }
+
+        if (!allow_high_addrs) {
+          pmp_cfg[i].addr[31:29] == '0;
+        }
+      }
+    }
+  }
+
+## addr_range_c  (riscv_pmp_cfg.sv)  [foreach,inside/range,cond/impl,bitslice]
+constraint addr_range_c {
+    foreach (pmp_cfg[i]) {
+      // Offset of pmp_cfg[0] is always set to 0 from main.
+      if (i != 0) {
+        pmp_cfg[i].offset inside {[1 : pmp_max_offset]};
+      } else {
+        pmp_cfg[i].offset == 0;
+      }
+    }
+  }
+
+## address_modes_c  (riscv_pmp_cfg.sv)  [foreach,cond/impl,cfg-reactive]
+constraint address_modes_c {
+    foreach (pmp_cfg[i]) {
+      pmp_cfg[i].addr_mode >= 0;
+      if (allow_high_addrs) {
+        pmp_cfg[i].addr_mode <= XLEN;
+      } else {
+        pmp_cfg[i].addr_mode <= XLEN - 3;
+      }
+    }
+  }
+
+## allow_high_addrs_c  (riscv_pmp_cfg.sv)  [dist,cond/impl,cfg-reactive]
+constraint allow_high_addrs_c {
+    allow_high_addrs dist { 0 := 100 - high_addr_proportion,
+                            1 := high_addr_proportion };
+    if (XLEN == 64) {
+      allow_high_addrs == 1'b1;
+    }
+  }
+
+## grain_addr_mode_c  (riscv_pmp_cfg.sv)  [foreach,cond/impl]
+constraint grain_addr_mode_c {
+    foreach (pmp_cfg[i]) {
+      (pmp_granularity >= 1) -> (pmp_cfg[i].a != NA4);
+    }
+  }
+
+## modes_before_addr_c  (riscv_pmp_cfg.sv)  [foreach,solve-order]
+constraint modes_before_addr_c {
+    foreach (pmp_cfg[i]) {
+      solve allow_high_addrs before pmp_cfg[i].addr, pmp_cfg[i].addr_mode;
+      solve pmp_cfg[i].a before pmp_cfg[i].addr;
+      solve pmp_cfg[i].addr_mode before pmp_cfg[i].addr;
+    }
+  }
+
+## sanity_c  (riscv_pmp_cfg.sv)  [inside/range,cfg-reactive,bitslice]
+constraint sanity_c {
+    pmp_num_regions inside {[1 : 16]};
+    pmp_granularity inside {[0 : XLEN + 3]};
+  }
+
+## xwr_c  (riscv_pmp_cfg.sv)  [foreach,solve-order]
+constraint xwr_c {
+    foreach (pmp_cfg[i]) {
+      solve mseccfg.mml before pmp_cfg[i].w, pmp_cfg[i].r;
+      !(!mseccfg.mml && pmp_cfg[i].w && !pmp_cfg[i].r);
+    }
+  }
+
+## hardwired_fld_c  (riscv_reg.sv)  [cond/impl]
+constraint hardwired_fld_c {
+    (hard_wired) -> (val == reset_val);
+  }
+
+## zero_reserved_field_c  (riscv_reg.sv)  [cond/impl]
+constraint zero_reserved_field_c {
+    (access_type == WPRI) -> (val == '0);
+  }
+
+## allow_illegal_vec_instr_c  (riscv_vector_cfg.sv)  [relational]
+constraint allow_illegal_vec_instr_c {soft allow_illegal_vec_instr == 0;}
+
+## bringup_c  (riscv_vector_cfg.sv)  [relational]
+constraint bringup_c {
+    vstart == 0;
+    vl == VLEN/vtype.vsew;
+    vtype.vediv == 1;
+  }
+
+## legal_c  (riscv_vector_cfg.sv)  [solve-order,inside/range,bitslice]
+constraint legal_c {
+    solve vtype before vl;
+    solve vl before vstart;
+    vstart inside {[0:vl]};
+    vl inside {[1:VLEN/vtype.vsew]};
+  }
+
+## only_vec_instr_c  (riscv_vector_cfg.sv)  [relational]
+constraint only_vec_instr_c {soft only_vec_instr == 0;}
+
+## vdeiv_c  (riscv_vector_cfg.sv)  [inside/range]
+constraint vdeiv_c {
+    vtype.vediv inside {1, 2, 4, 8};
+    vtype.vediv <= (vtype.vsew / SELEN);
+  }
+
+## vec_quad_widening_c  (riscv_vector_cfg.sv)  [cond/impl]
+constraint vec_quad_widening_c {
+    (!vec_narrowing_widening) -> (!vec_quad_widening);
+    // FP requires at least 16 bits and quad-widening requires no more than ELEN/4 bits.
+    (ELEN < 64) -> (!(vec_fp && vec_quad_widening));
+  }
+
+## vlmul_c  (riscv_vector_cfg.sv)  [inside/range,cond/impl]
+constraint vlmul_c {
+    vtype.vlmul inside {1, 2, 4, 8};
+    vtype.vlmul <= MAX_LMUL;
+    if (vec_narrowing_widening) {
+      (vtype.vlmul < 8) || (vtype.fractional_lmul == 1'b1);
+    }
+    if (vec_quad_widening) {
+      (vtype.vlmul < 4) || (vtype.fractional_lmul == 1'b1);
+    }
+  }
+
+## vseg_c  (riscv_vector_cfg.sv)  [cond/impl]
+constraint vseg_c {
+    enable_zvlsseg -> (vtype.vlmul < 8);
+  }
+
+## vsew_c  (riscv_vector_cfg.sv)  [inside/range,cond/impl]
+constraint vsew_c {
+    vtype.vsew inside {8, 16, 32, 64, 128};
+    vtype.vsew <= ELEN;
+    // TODO: Determine the legal range of floating point format
+    if (vec_fp) {vtype.vsew inside {32};}
+    if (vec_narrowing_widening) {vtype.vsew < ELEN;}
+    if (vec_quad_widening) {vtype.vsew < (ELEN >> 1);}
+  }
+

@@ -1,0 +1,3 @@
+read_verilog dpll_solver_syn.v
+hierarchy -top dpll_solver
+synth_ice40 -top dpll_solver -json dpll.json

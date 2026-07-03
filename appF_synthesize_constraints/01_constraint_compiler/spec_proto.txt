@@ -1,0 +1,10 @@
+// the prototype constraint, now via the real flow (expect 416 solutions)
+rand bit [7:0] addr;
+rand bit       kind;
+rand bit [2:0] prio;
+constraint c {
+  addr[1:0] == 0;
+  (kind == 1) -> (addr[7] == 0);
+  prio != 0;
+  (kind == 0) -> (prio <= 3);
+}

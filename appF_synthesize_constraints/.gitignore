@@ -1,0 +1,15 @@
+# external clones (each has its own .git; regenerable via git clone)
+/sv-tools/
+/verilator-verification/
+
+# third-party reference PDFs (not our work; large)
+*.pdf
+
+# build / tool artifacts
+**/obj_dir/
+*.olean
+*.json
+
+# python bytecode cache
+__pycache__/
+*.pyc

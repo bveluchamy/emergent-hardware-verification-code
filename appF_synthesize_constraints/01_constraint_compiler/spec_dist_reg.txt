@@ -1,0 +1,3 @@
+// register dist (RA-heavy), ranges + :/ -- riscv-dv jump-target pattern (enum->ints)
+rand bit [4:0] rd;
+constraint c { rd dist {1 := 5, 5 := 2, [2:4] :/ 1, [7:31] :/ 2}; }

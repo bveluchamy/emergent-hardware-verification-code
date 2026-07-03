@@ -1,0 +1,17 @@
+# Compiled test binaries (no extension)
+test_mux2to1
+test_dff
+test_counter
+test_shiftreg
+test_alu
+test_fsm_arbiter
+test_fifo
+
+# Benchmark binaries
+bench/lfsr16_actor_sim
+bench/counter_array_actor_sim
+bench/obj_dir/
+
+# Test artifacts
+test_fifo.vcd
+*.vcd

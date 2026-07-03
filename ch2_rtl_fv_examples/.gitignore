@@ -1,0 +1,4 @@
+# Verilator simulation build output (`make sim`)
+obj_dir/
+*.vcd
+*.fst

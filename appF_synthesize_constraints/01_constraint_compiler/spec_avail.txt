@@ -1,0 +1,5 @@
+rand bit [4:0] avail [3];
+constraint c {
+  foreach (avail[i]) { !(avail[i] inside {0,2,3,4}); }
+  unique { avail };
+}

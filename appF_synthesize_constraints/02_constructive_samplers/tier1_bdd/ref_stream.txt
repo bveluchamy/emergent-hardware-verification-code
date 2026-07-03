@@ -1,0 +1,20 @@
+addr=192 kind=R prio=3
+addr=132 kind=R prio=1
+addr= 12 kind=W prio=3
+addr= 28 kind=W prio=6
+addr=184 kind=R prio=3
+addr=112 kind=W prio=4
+addr=100 kind=R prio=3
+addr= 72 kind=R prio=3
+addr= 16 kind=W prio=5
+addr= 32 kind=W prio=7
+addr= 68 kind=W prio=7
+addr= 12 kind=R prio=2
+addr= 24 kind=R prio=2
+addr= 52 kind=W prio=2
+addr=232 kind=R prio=2
+addr=208 kind=R prio=3
+addr= 32 kind=W prio=5
+addr=196 kind=R prio=3
+addr= 12 kind=W prio=5
+addr= 24 kind=W prio=7
