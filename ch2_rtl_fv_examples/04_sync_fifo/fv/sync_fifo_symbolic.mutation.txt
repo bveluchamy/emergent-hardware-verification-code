@@ -1,0 +1,51 @@
+DUT: sync_fifo_word_mut.sv + fifo_symbolic_checker.sv
+  22 state bit(s), 36 input(s), 1 assumption(s)
+  --- safety ---
+── Transition system (frontend output: RTL → state machine) ─────
+state bits (23): wr_ptr[0], wr_ptr[1], wr_ptr[2], rd_ptr[0], rd_ptr[1], rd_ptr[2], mem.0[0], mem.0[1], mem.1[0], mem.1[1], mem.2[0], mem.2[1], mem.3[0], mem.3[1], current_occupancy[0], current_occupancy[1], token_in_flight, token_pos[0], token_pos[1], __pvalid, __pv0_1[0], __pv0_1[1], __assm_ok
+inputs     (36): req.push, req.pop, req.wdata[0], req.wdata[1], req.wdata[2], req.wdata[3], req.wdata[4], req.wdata[5], req.wdata[6], req.wdata[7], req.wdata[8], req.wdata[9], req.wdata[10], req.wdata[11], req.wdata[12], req.wdata[13], req.wdata[14], req.wdata[15], req.wdata[16], req.wdata[17], req.wdata[18], req.wdata[19], req.wdata[20], req.wdata[21], req.wdata[22], req.wdata[23], req.wdata[24], req.wdata[25], req.wdata[26], req.wdata[27], req.wdata[28], req.wdata[29], req.wdata[30], req.wdata[31], symbolic_token[0], symbolic_token[1]
+next-state functions  s' = f(s, inputs):
+  wr_ptr[0]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ¬wr_ptr[0] : wr_ptr[0])
+  wr_ptr[1]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? (wr_ptr[1] ⊕ wr_ptr[0]) : wr_ptr[1])
+  wr_ptr[2]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? (wr_ptr[2] ⊕ (wr_ptr[0] ∧ wr_ptr[1])) : wr_ptr[2])
+  rd_ptr[0]' = ((req.pop ∧ ¬(¬(wr_ptr[0] ⊕ rd_ptr[0]) ∧ ¬(wr_ptr[1] ⊕ rd_ptr[1]) ∧ ¬(wr_ptr[2] ⊕ rd_ptr[2]))) ? ¬rd_ptr[0] : rd_ptr[0])
+  rd_ptr[1]' = ((req.pop ∧ ¬(¬(wr_ptr[0] ⊕ rd_ptr[0]) ∧ ¬(wr_ptr[1] ⊕ rd_ptr[1]) ∧ ¬(wr_ptr[2] ⊕ rd_ptr[2]))) ? (rd_ptr[1] ⊕ rd_ptr[0]) : rd_ptr[1])
+  rd_ptr[2]' = ((req.pop ∧ ¬(¬(wr_ptr[0] ⊕ rd_ptr[0]) ∧ ¬(wr_ptr[1] ⊕ rd_ptr[1]) ∧ ¬(wr_ptr[2] ⊕ rd_ptr[2]))) ? (rd_ptr[2] ⊕ (rd_ptr[0] ∧ rd_ptr[1])) : rd_ptr[2])
+  mem.0[0]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((¬wr_ptr[0] ∧ ¬wr_ptr[1]) ? 1'b0 : mem.0[0]) : mem.0[0])
+  mem.0[1]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((¬wr_ptr[0] ∧ ¬wr_ptr[1]) ? 1'b0 : mem.0[1]) : mem.0[1])
+  mem.1[0]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((wr_ptr[0] ∧ ¬wr_ptr[1]) ? 1'b0 : mem.1[0]) : mem.1[0])
+  mem.1[1]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((wr_ptr[0] ∧ ¬wr_ptr[1]) ? 1'b0 : mem.1[1]) : mem.1[1])
+  mem.2[0]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((¬wr_ptr[0] ∧ wr_ptr[1]) ? 1'b0 : mem.2[0]) : mem.2[0])
+  mem.2[1]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((¬wr_ptr[0] ∧ wr_ptr[1]) ? 1'b0 : mem.2[1]) : mem.2[1])
+  mem.3[0]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((wr_ptr[0] ∧ wr_ptr[1]) ? 1'b0 : mem.3[0]) : mem.3[0])
+  mem.3[1]' = ((req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (¬… ∧ ¬…))) ? ((wr_ptr[0] ∧ wr_ptr[1]) ? 1'b0 : mem.3[1]) : mem.3[1])
+  current_occupancy[0]' = ((current_occupancy[0] ⊕ (req.push ∧ ¬((wr_ptr[2] ⊕ rd_ptr[2]) ∧ (… ∧ …)))) ⊕ (req.pop ∧ ¬(¬(wr_ptr[0] ⊕ rd_ptr[0]) ∧ ¬(wr_ptr[1] ⊕ rd_ptr[1]) ∧ ¬(wr_ptr[2] ⊕ rd_ptr[2]))))
+  current_occupancy[1]' = (((current_occupancy[1] ⊕ (current_occupancy[0] ∧ (req.push ∧ ¬…))) ⊕ (req.pop ∧ ¬(¬… ∧ ¬… ∧ ¬…))) ⊕ ((current_occupancy[0] ⊕ (req.push ∧ ¬(… ∧ …))) ∧ (req.pop ∧ ¬(¬… ∧ ¬… ∧ ¬…))))
+  token_in_flight' = ((((req.push ∧ ¬(… ∧ …)) ∧ ¬token_in_flight) ∧ (¬(req.wdata[0] ⊕ symbolic_token[0]) ∧ ¬(req.wdata[1] ⊕ symbolic_token[1]) ∧ ¬req.wdata[2] ∧ ¬req.wdata[3] ∧ ¬req.wdata[4] ∧ ¬req.wdata[5] ∧ ¬req.wdata[6] ∧ ¬req.wdata[7] ∧ ¬req.wdata[8] ∧ ¬req.wdata[9] ∧ ¬req.wdata[10] ∧ ¬req.wdata[11] ∧ ¬req.wdata[12] ∧ ¬req.wdata[13] ∧ ¬req.wdata[14] ∧ ¬req.wdata[15] ∧ ¬req.wdata[16] ∧ ¬req.wdata[17] ∧ ¬req.wdata[18] ∧ ¬req.wdata[19] ∧ ¬req.wdata[20] ∧ ¬req.wdata[21] ∧ ¬req.wdata[22] ∧ ¬req.wdata[23] ∧ ¬req.wdata[24] ∧ ¬req.wdata[25] ∧ ¬req.wdata[26] ∧ ¬req.wdata[27] ∧ ¬req.wdata[28] ∧ ¬req.wdata[29] ∧ ¬req.wdata[30] ∧ ¬req.wdata[31])) ? 1'b1 : (((req.pop ∧ ¬(… ∧ … ∧ …)) ∧ token_in_flight) ? ((¬token_pos[0] ∧ ¬token_pos[1]) ? 1'b0 : token_in_flight) : token_in_flight))
+  token_pos[0]' = ((((req.push ∧ ¬(… ∧ …)) ∧ ¬token_in_flight) ∧ (¬(req.wdata[0] ⊕ symbolic_token[0]) ∧ ¬(req.wdata[1] ⊕ symbolic_token[1]) ∧ ¬req.wdata[2] ∧ ¬req.wdata[3] ∧ ¬req.wdata[4] ∧ ¬req.wdata[5] ∧ ¬req.wdata[6] ∧ ¬req.wdata[7] ∧ ¬req.wdata[8] ∧ ¬req.wdata[9] ∧ ¬req.wdata[10] ∧ ¬req.wdata[11] ∧ ¬req.wdata[12] ∧ ¬req.wdata[13] ∧ ¬req.wdata[14] ∧ ¬req.wdata[15] ∧ ¬req.wdata[16] ∧ ¬req.wdata[17] ∧ ¬req.wdata[18] ∧ ¬req.wdata[19] ∧ ¬req.wdata[20] ∧ ¬req.wdata[21] ∧ ¬req.wdata[22] ∧ ¬req.wdata[23] ∧ ¬req.wdata[24] ∧ ¬req.wdata[25] ∧ ¬req.wdata[26] ∧ ¬req.wdata[27] ∧ ¬req.wdata[28] ∧ ¬req.wdata[29] ∧ ¬req.wdata[30] ∧ ¬req.wdata[31])) ? (current_occupancy[0] ⊕ (req.pop ∧ ¬(¬… ∧ ¬… ∧ ¬…))) : (((req.pop ∧ ¬(… ∧ … ∧ …)) ∧ token_in_flight) ? ((¬token_pos[0] ∧ ¬token_pos[1]) ? token_pos[0] : ¬token_pos[0]) : token_pos[0]))
+  token_pos[1]' = ((((req.push ∧ ¬(… ∧ …)) ∧ ¬token_in_flight) ∧ (¬(req.wdata[0] ⊕ symbolic_token[0]) ∧ ¬(req.wdata[1] ⊕ symbolic_token[1]) ∧ ¬req.wdata[2] ∧ ¬req.wdata[3] ∧ ¬req.wdata[4] ∧ ¬req.wdata[5] ∧ ¬req.wdata[6] ∧ ¬req.wdata[7] ∧ ¬req.wdata[8] ∧ ¬req.wdata[9] ∧ ¬req.wdata[10] ∧ ¬req.wdata[11] ∧ ¬req.wdata[12] ∧ ¬req.wdata[13] ∧ ¬req.wdata[14] ∧ ¬req.wdata[15] ∧ ¬req.wdata[16] ∧ ¬req.wdata[17] ∧ ¬req.wdata[18] ∧ ¬req.wdata[19] ∧ ¬req.wdata[20] ∧ ¬req.wdata[21] ∧ ¬req.wdata[22] ∧ ¬req.wdata[23] ∧ ¬req.wdata[24] ∧ ¬req.wdata[25] ∧ ¬req.wdata[26] ∧ ¬req.wdata[27] ∧ ¬req.wdata[28] ∧ ¬req.wdata[29] ∧ ¬req.wdata[30] ∧ ¬req.wdata[31])) ? ((current_occupancy[1] ⊕ (req.pop ∧ ¬(… ∧ … ∧ …))) ⊕ (current_occupancy[0] ∧ (req.pop ∧ ¬(… ∧ … ∧ …)))) : (((req.pop ∧ ¬(… ∧ … ∧ …)) ∧ token_in_flight) ? ((¬token_pos[0] ∧ ¬token_pos[1]) ? token_pos[1] : (¬token_pos[1] ⊕ token_pos[0])) : token_pos[1]))
+  __pvalid' = 1'b1
+  __pv0_1[0]' = symbolic_token[0]
+  __pv0_1[1]' = symbolic_token[1]
+  __assm_ok' = (__assm_ok ∧ (¬__pvalid ∨ (¬(symbolic_token[0] ⊕ __pv0_1[0]) ∧ ¬(symbolic_token[1] ⊕ __pv0_1[1]))))
+reset state: wr_ptr[0]=0, wr_ptr[1]=0, wr_ptr[2]=0, rd_ptr[0]=0, rd_ptr[1]=0, rd_ptr[2]=0, mem.0[0]=0, mem.0[1]=0, mem.1[0]=0, mem.1[1]=0, mem.2[0]=0, mem.2[1]=0, mem.3[0]=0, mem.3[1]=0, current_occupancy[0]=0, current_occupancy[1]=0, token_in_flight=0, token_pos[0]=0, token_pos[1]=0, __pvalid=0, __pv0_1[0]=0, __pv0_1[1]=0, __assm_ok=1
+property holds when NOT bad, where  bad = (¬(¬(token_in_flight ∧ (… ∧ …)) ∨ (¬(… ⊕ symbolic_token[0]) ∧ ¬(… ⊕ symbolic_token[1]))) ∧ __assm_ok ∧ (¬__pvalid ∨ (¬(symbolic_token[0] ⊕ __pv0_1[0]) ∧ ¬(symbolic_token[1] ⊕ __pv0_1[1]))))
+── Tseitin encoding of `bad` → CNF (the V8's fuel) ──────────────
+`bad` is a 33-gate datapath predicate; encoding it yields 79 variables and 71 clauses.
+(gate-by-gate output is elided here -- run a small FSM example to watch every
+ clause emitted; the mechanism is identical, just shorter.)
+
+── IC3 / PDR -- frames of over-approximation, no unrolling ──────
+F_0=Init, each F_i ⊇ states reachable in ≤i steps and ⊆ P. Push bad
+cubes backward; a cube with no predecessor gives a clause to block it.
+frontier k=1: any state in F_1 that can step to bad?
+  ternary lift: 23-bit minterm → 9 literal(s) (6 outside the targets' cone, 8 X'd by simulation)
+  found a bad predecessor {!mem.0[1] & !mem.1[1] & !mem.2[1] & !mem.3[1] & token_in_flight & !token_pos[0] & !token_pos[1] & !__pvalid & __assm_ok} in F_1; discharge it backward
+  obligation {!mem.0[1] & !mem.1[1] & !mem.2[1] & !mem.3[1] & token_in_flight & !token_pos[0] & !token_pos[1] & !__pvalid & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/9 literals and
+    learn (!token_in_flight | __pvalid) into F_1..F_1
+  ternary lift: 23-bit minterm → 10 literal(s) (6 outside the targets' cone, 7 X'd by simulation)
+  found a bad predecessor {!mem.0[1] & !mem.1[1] & !mem.2[1] & !mem.3[1] & token_in_flight & !token_pos[0] & !token_pos[1] & !__pv0_1[0] & __pv0_1[1] & __assm_ok} in F_1; discharge it backward
+    ternary lift: 23-bit minterm → 11 literal(s) (4 outside the targets' cone, 8 X'd by simulation)
+  obligation {!mem.0[1] & !mem.1[1] & !mem.2[1] & !mem.3[1] & token_in_flight & !token_pos[0] & !token_pos[1] & !__pv0_1[0] & __pv0_1[1] & __assm_ok} @F_1: has a predecessor {!wr_ptr[2] & !rd_ptr[2] & !mem.0[1] & !mem.1[1] & !mem.2[1] & !mem.3[1] & !current_occupancy[0] & !current_occupancy[1] & !token_in_flight & !__pvalid & __assm_ok} in F_0 → block that first
+  obligation reached Init → the bad state is reachable → UNSAFE
+  [IC3/PDR       ] UNSAFE -> a real counterexample

@@ -1,0 +1,67 @@
+DUT: cdc_handshake_rx_mut.sv + cdc_handshake_rx_checker.sv
+  3 state bit(s), 1 input(s), 2 liveness, 2 assumption(s)
+  --- liveness 0: (async_req_a) |-> s_eventually (sync_ack_b) ---
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  UNSAT → no counterexample of length 1
+depth k=2: is a bad state reachable in exactly 2 step(s) from reset?
+  SAT → real counterexample, 2 step(s) from reset:
+  cycle 0: {'sync_ack_b': 0, '__past0': 0, '__past1': 0, '__pending': 0, '__saved': 0, '__shadow_sync_ack_b': 0, '__shadow___past0': 0, '__shadow___past1': 0, '__shadow___pending': 0, '__triggered': 0, '__assm_ok': 1}
+  cycle 1: {'sync_ack_b': 0, '__past0': 1, '__past1': 0, '__pending': 1, '__saved': 0, '__shadow_sync_ack_b': 0, '__shadow___past0': 0, '__shadow___past1': 0, '__shadow___pending': 0, '__triggered': 0, '__assm_ok': 1}
+  cycle 2: {'sync_ack_b': 0, '__past0': 1, '__past1': 0, '__pending': 1, '__saved': 1, '__shadow_sync_ack_b': 0, '__shadow___past0': 1, '__shadow___past1': 0, '__shadow___pending': 1, '__triggered': 0, '__assm_ok': 1}
+  [liveness      ] FAILS -> a starvation lasso is reachable
+  --- liveness 1: (¬async_req_a) |-> s_eventually (¬sync_ack_b) ---
+── BMC -- unroll from reset, hunt a counterexample ──────────────
+build init(s0) ∧ T(s0,s1) ∧ … ∧ T(s_{k-1},s_k), then ask if bad(s_k) can hold.
+depth k=0: is a bad state reachable in exactly 0 step(s) from reset?
+  UNSAT → no counterexample of length 0
+depth k=1: is a bad state reachable in exactly 1 step(s) from reset?
+  UNSAT → no counterexample of length 1
+depth k=2: is a bad state reachable in exactly 2 step(s) from reset?
+  UNSAT → no counterexample of length 2
+depth k=3: is a bad state reachable in exactly 3 step(s) from reset?
+  UNSAT → no counterexample of length 3
+depth k=4: is a bad state reachable in exactly 4 step(s) from reset?
+  UNSAT → no counterexample of length 4
+depth k=5: is a bad state reachable in exactly 5 step(s) from reset?
+  UNSAT → no counterexample of length 5
+depth k=6: is a bad state reachable in exactly 6 step(s) from reset?
+  UNSAT → no counterexample of length 6
+depth k=7: is a bad state reachable in exactly 7 step(s) from reset?
+  UNSAT → no counterexample of length 7
+depth k=8: is a bad state reachable in exactly 8 step(s) from reset?
+  UNSAT → no counterexample of length 8
+depth k=9: is a bad state reachable in exactly 9 step(s) from reset?
+  UNSAT → no counterexample of length 9
+depth k=10: is a bad state reachable in exactly 10 step(s) from reset?
+  UNSAT → no counterexample of length 10
+depth k=11: is a bad state reachable in exactly 11 step(s) from reset?
+  UNSAT → no counterexample of length 11
+depth k=12: is a bad state reachable in exactly 12 step(s) from reset?
+  UNSAT → no counterexample of length 12
+no counterexample up to depth 12: a bug finder, not (yet) a proof.
+── IC3 / PDR -- frames of over-approximation, no unrolling ──────
+F_0=Init, each F_i ⊇ states reachable in ≤i steps and ⊆ P. Push bad
+cubes backward; a cube with no predecessor gives a clause to block it.
+frontier k=1: any state in F_1 that can step to bad?
+  found a bad predecessor {!sync_ack_b & !__past0 & !__past1 & !__pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & !__shadow___pending & !__triggered & __assm_ok} in F_1; discharge it backward
+  obligation {!sync_ack_b & !__past0 & !__past1 & !__pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & !__shadow___pending & !__triggered & __assm_ok} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/11 literals and
+    learn (!__saved | __triggered) into F_1..F_1
+  F_1 frontier is clean (no move to bad)
+frontier k=2: any state in F_2 that can step to bad?
+  found a bad predecessor {!sync_ack_b & !__past0 & !__past1 & !__pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & !__shadow___pending & !__triggered & __assm_ok} in F_2; discharge it backward
+  obligation {!sync_ack_b & !__past0 & !__past1 & !__pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & !__shadow___pending & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/11 literals and
+    learn (!__saved | __shadow___pending | __triggered) into F_1..F_2
+  found a bad predecessor {!sync_ack_b & !__past0 & !__past1 & __pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & __shadow___pending & !__triggered & __assm_ok} in F_2; discharge it backward
+  obligation {!sync_ack_b & !__past0 & !__past1 & __pending & __saved & !__shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & __shadow___pending & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 3/11 literals and
+    learn (!__pending | __shadow_sync_ack_b | __triggered) into F_1..F_2
+  found a bad predecessor {sync_ack_b & !__past0 & !__past1 & __pending & __saved & __shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & __shadow___pending & !__triggered & __assm_ok} in F_2; discharge it backward
+  obligation {sync_ack_b & !__past0 & !__past1 & __pending & __saved & __shadow_sync_ack_b & !__shadow___past0 & !__shadow___past1 & __shadow___pending & !__triggered & __assm_ok} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 1/11 literals and
+    learn (!sync_ack_b) into F_1..F_2
+  F_2 frontier is clean (no move to bad)
+propagation makes F_2 = F_3: converged. The frame is an
+inductive invariant (3 clause(s)). SAFE.
+  [liveness      ] HOLDS -> no starvation lasso is reachable

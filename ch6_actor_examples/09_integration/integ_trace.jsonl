@@ -1,0 +1,80 @@
+{"trace":1,"span":0,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":0,"end":0}
+{"trace":1,"span":1,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":1,"end":1}
+{"trace":2,"span":25,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":25,"end":25}
+{"trace":2,"span":26,"parent":25,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":26,"end":26}
+{"trace":3,"span":50,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":50,"end":50}
+{"trace":3,"span":51,"parent":50,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":51,"end":51}
+{"trace":4,"span":75,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":75,"end":75}
+{"trace":4,"span":76,"parent":75,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":76,"end":76}
+{"trace":5,"span":100,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":100,"end":100}
+{"trace":5,"span":101,"parent":100,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":101,"end":101}
+{"trace":6,"span":125,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":125,"end":125}
+{"trace":6,"span":126,"parent":125,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":126,"end":126}
+{"trace":7,"span":150,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":150,"end":150}
+{"trace":7,"span":151,"parent":150,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":151,"end":151}
+{"trace":8,"span":175,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":175,"end":175}
+{"trace":8,"span":176,"parent":175,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":176,"end":176}
+{"trace":9,"span":200,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":200,"end":200}
+{"trace":9,"span":201,"parent":200,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":201,"end":201}
+{"trace":10,"span":225,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":225,"end":225}
+{"trace":10,"span":226,"parent":225,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":226,"end":226}
+{"trace":18,"span":250,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":250,"end":250}
+{"trace":18,"span":251,"parent":250,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":251,"end":251}
+{"trace":19,"span":275,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":275,"end":275}
+{"trace":19,"span":276,"parent":275,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":276,"end":276}
+{"trace":20,"span":300,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":300,"end":300}
+{"trace":20,"span":301,"parent":300,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":301,"end":301}
+{"trace":21,"span":325,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":325,"end":325}
+{"trace":21,"span":326,"parent":325,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":326,"end":326}
+{"trace":22,"span":350,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":350,"end":350}
+{"trace":22,"span":351,"parent":350,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":351,"end":351}
+{"trace":23,"span":375,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":375,"end":375}
+{"trace":23,"span":376,"parent":375,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":376,"end":376}
+{"trace":24,"span":400,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":400,"end":400}
+{"trace":24,"span":401,"parent":400,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":401,"end":401}
+{"trace":25,"span":425,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":425,"end":425}
+{"trace":25,"span":426,"parent":425,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":426,"end":426}
+{"trace":26,"span":450,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":450,"end":450}
+{"trace":26,"span":451,"parent":450,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":451,"end":451}
+{"trace":27,"span":475,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":475,"end":475}
+{"trace":27,"span":476,"parent":475,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":476,"end":476}
+{"trace":35,"span":500,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":500,"end":500}
+{"trace":35,"span":501,"parent":500,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":501,"end":501}
+{"trace":36,"span":525,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":525,"end":525}
+{"trace":36,"span":526,"parent":525,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":526,"end":526}
+{"trace":37,"span":550,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":550,"end":550}
+{"trace":37,"span":551,"parent":550,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":551,"end":551}
+{"trace":38,"span":575,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":575,"end":575}
+{"trace":38,"span":576,"parent":575,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":576,"end":576}
+{"trace":39,"span":600,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":600,"end":600}
+{"trace":39,"span":601,"parent":600,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":601,"end":601}
+{"trace":40,"span":625,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":625,"end":625}
+{"trace":40,"span":626,"parent":625,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":626,"end":626}
+{"trace":41,"span":650,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":650,"end":650}
+{"trace":41,"span":651,"parent":650,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":651,"end":651}
+{"trace":42,"span":675,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":675,"end":675}
+{"trace":42,"span":676,"parent":675,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":676,"end":676}
+{"trace":43,"span":700,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":700,"end":700}
+{"trace":43,"span":701,"parent":700,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":701,"end":701}
+{"trace":44,"span":725,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":725,"end":725}
+{"trace":44,"span":726,"parent":725,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":726,"end":726}
+{"trace":52,"span":750,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":750,"end":750}
+{"trace":52,"span":751,"parent":750,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":751,"end":751}
+{"trace":53,"span":775,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":775,"end":775}
+{"trace":53,"span":776,"parent":775,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":776,"end":776}
+{"trace":54,"span":800,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":800,"end":800}
+{"trace":54,"span":801,"parent":800,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":801,"end":801}
+{"trace":55,"span":825,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":825,"end":825}
+{"trace":55,"span":826,"parent":825,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":826,"end":826}
+{"trace":56,"span":850,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":850,"end":850}
+{"trace":56,"span":851,"parent":850,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":851,"end":851}
+{"trace":57,"span":875,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":875,"end":875}
+{"trace":57,"span":876,"parent":875,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":876,"end":876}
+{"trace":58,"span":900,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":900,"end":900}
+{"trace":58,"span":901,"parent":900,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":901,"end":901}
+{"trace":59,"span":925,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":925,"end":925}
+{"trace":59,"span":926,"parent":925,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":926,"end":926}
+{"trace":60,"span":950,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":950,"end":950}
+{"trace":60,"span":951,"parent":950,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":951,"end":951}
+{"trace":61,"span":975,"parent":0,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;}integ_pkg::MemReq_s","start":975,"end":975}
+{"trace":61,"span":976,"parent":975,"op":"struct{longint trace;int addr;enum{READ=32'h0;WRITE=32'h1;}integ_pkg::Op_e op;int data;int bank;bit ok;}integ_pkg::MemRsp_s","start":976,"end":976}

@@ -1,0 +1,6 @@
+// register allocation: N distinct non-zero registers (foreach + unique)
+rand bit [4:0] regs [3];
+constraint c {
+  foreach (regs[i]) { regs[i] != 0; }
+  unique { regs };
+}

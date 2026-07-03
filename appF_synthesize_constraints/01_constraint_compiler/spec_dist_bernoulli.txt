@@ -1,0 +1,2 @@
+rand bit allow;
+constraint c { allow dist {1 := 30, 0 := 70}; }

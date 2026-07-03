@@ -1,0 +1,10 @@
+// REAL riscv-dv: vector_slide_c body (riscv_vector_instr.sv)
+rand bit [4:0] vd;
+rand bit [4:0] vs1;
+rand bit [4:0] vs2;
+rand bit       vm;
+constraint vector_slide_c {
+  vd != vs2;
+  vd != vs1;
+  (vm == 0) -> (vd != 0);
+}

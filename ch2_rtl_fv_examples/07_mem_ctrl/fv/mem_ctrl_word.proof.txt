@@ -1,0 +1,6 @@
+DUT: mem_ctrl_pkg.sv + mem_ctrl.sv + mem_ctrl_word_props.sv (word-level: 14 state, 1 memory kept symbolic)
+── word-level BMC of mem_ctrl: unroll 0 frames, memory kept symbolic ───
+  no ¬prop through depth 0 -> SAFE up to 0
+── word-level k-induction of mem_ctrl at k=1 ────────────────────
+  [word k-induction] HOLDS -> proved with the memory address symbolic (array theory), never bit-blasted
+PROOF HOLDS: the memory contract holds word-level.

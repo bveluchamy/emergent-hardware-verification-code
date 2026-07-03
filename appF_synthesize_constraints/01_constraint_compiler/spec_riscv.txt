@@ -1,0 +1,9 @@
+// RISC-V R-type field constraint (riscv-dv flavour): coupled rs1!=rd
+rand bit [4:0] rd;
+rand bit [4:0] rs1;
+rand bit [2:0] funct;
+constraint c {
+  rd != 0;
+  rs1 != rd;
+  funct inside {0,1,2,5};
+}

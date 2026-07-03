@@ -1,0 +1,54 @@
+diff --git a/src/riscv_instr_pkg.sv b/src/riscv_instr_pkg.sv
+index df29cfe..a1504fb 100644
+--- a/src/riscv_instr_pkg.sv
++++ b/src/riscv_instr_pkg.sv
+@@ -1613,6 +1613,11 @@ package riscv_instr_pkg;
+   `include "riscv_callstack_gen.sv"
+   `include "riscv_data_page_gen.sv"
+ 
++// VERILATOR third-oracle build (06_riscvdv_capstone): the high-level generator/sequence/coverage classes
++// below use inline `randomize() with` + foreach over cross-scope arrays, which trip verilator 5.049
++// internal errors (V3Scope/V3Randomize). They are NOT needed to randomize riscv_instr_gen_config
++// (where ra_c / sp_tp_c live), so they are excluded for verilator only -- real simulators compile all.
++`ifndef VERILATOR
+   `include "riscv_instr_stream.sv"
+   `include "riscv_loop_instr.sv"
+   `include "riscv_directed_instr_lib.sv"
+@@ -1623,6 +1628,7 @@ package riscv_instr_pkg;
+   `include "riscv_asm_program_gen.sv"
+   `include "riscv_debug_rom_gen.sv"
+   `include "riscv_instr_cover_group.sv"
++`endif
+   `include "user_extension.svh"
+ 
+ endpackage
+diff --git a/src/riscv_pmp_cfg.sv b/src/riscv_pmp_cfg.sv
+index e256178..493bec6 100644
+--- a/src/riscv_pmp_cfg.sv
++++ b/src/riscv_pmp_cfg.sv
+@@ -103,7 +103,9 @@ class riscv_pmp_cfg extends uvm_object;
+ 
+   constraint xwr_c {
+     foreach (pmp_cfg[i]) {
+-      solve mseccfg.mml before pmp_cfg[i].w, pmp_cfg[i].r;
++`ifndef VERILATOR
++      solve mseccfg.mml before pmp_cfg[i].w, pmp_cfg[i].r;   // solve-order hint only; verilator V3Randomize internal-errors on array-elem rhs
++`endif
+       !(!mseccfg.mml && pmp_cfg[i].w && !pmp_cfg[i].r);
+     }
+   }
+@@ -145,11 +147,13 @@ class riscv_pmp_cfg extends uvm_object;
+   }
+ 
+   constraint modes_before_addr_c {
++`ifndef VERILATOR
+     foreach (pmp_cfg[i]) {
+-      solve allow_high_addrs before pmp_cfg[i].addr, pmp_cfg[i].addr_mode;
++      solve allow_high_addrs before pmp_cfg[i].addr, pmp_cfg[i].addr_mode;   // solve-order hints only (verilator V3Randomize array-elem rhs)
+       solve pmp_cfg[i].a before pmp_cfg[i].addr;
+       solve pmp_cfg[i].addr_mode before pmp_cfg[i].addr;
+     }
++`endif
+   }
+ 
+   constraint addr_legal_tor_c {

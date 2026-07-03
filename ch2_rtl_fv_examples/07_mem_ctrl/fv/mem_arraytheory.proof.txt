@@ -1,0 +1,46 @@
+DUT: mem_ctrl write-then-read + sync_fifo data-independence (theory of arrays)
+── write-then-read -- word-level memory via the theory of arrays ───
+  shadow' = (a==A) ? d : shadow
+── theory of arrays: read-over-write reduction before DPLL(T) ───
+── DPLL(T) @ 12-bit -- SAT proposes, the word-level theory disposes ───
+  atom 1:  (= a A)
+  atom 2:  (= __sel1 shadow)
+  atom 3:  (= __sel2 d)
+  atom 4:  (= __sel2 __sel1)
+  atom 5:  (= __sel2 shadow_next)
+  atom 6:  (= shadow_next d)
+  atom 7:  (= shadow_next shadow)
+loop: CDCL finds a truth assignment over the atoms; the theory checks it in
+      the bit-vector algebra and returns a lemma on any inconsistency.
+SAT skeleton: ¬atom1, atom2, ¬atom3, atom4, ¬atom5, ¬atom6, atom7
+  theory conflict on atoms [2, 4, 5, 7] (normal forms force it) → learn lemma [-2, -4, 5, -7]
+SAT skeleton: atom1, atom2, atom3, atom4, ¬atom5, atom6, ¬atom7
+  theory conflict on atoms [3, 5, 6] (normal forms force it) → learn lemma [-3, 5, -6]
+Boolean skeleton is UNSAT after 2 theory lemma(s) → UNSAT overall.
+  [write-then-read] HOLDS -> read-over-write proves it, address symbolic
+── fifo-token -- word-level memory via the theory of arrays ─────
+  3 disjoint pushes; the token in slot P is never overwritten
+── theory of arrays: read-over-write reduction before DPLL(T) ───
+── DPLL(T) @ 12-bit -- SAT proposes, the word-level theory disposes ───
+  atom 1:  (= Q0 P)
+  atom 2:  (= Q1 P)
+  atom 3:  (= Q2 P)
+  atom 4:  (= __sel1 d2)
+  atom 5:  (= __sel2 d1)
+  atom 6:  (= __sel3 d0)
+  atom 7:  (= P P)
+  atom 8:  (= __sel4 tok)
+  atom 9:  (= __sel4 __sel5)
+  atom 10:  (= __sel3 __sel4)
+  atom 11:  (= __sel2 __sel3)
+  atom 12:  (= __sel1 __sel2)
+  atom 13:  (= __sel1 tok)
+loop: CDCL finds a truth assignment over the atoms; the theory checks it in
+      the bit-vector algebra and returns a lemma on any inconsistency.
+SAT skeleton: ¬atom1, ¬atom2, ¬atom3, ¬atom4, ¬atom5, ¬atom6, ¬atom7, ¬atom8, atom9, atom10, atom11, atom12, ¬atom13
+  theory conflict on atoms [7] (normal forms force it) → learn lemma [7]
+SAT skeleton: ¬atom1, ¬atom2, ¬atom3, ¬atom4, ¬atom5, ¬atom6, atom7, atom8, atom9, atom10, atom11, atom12, ¬atom13
+  theory conflict on atoms [8, 10, 11, 12, 13] (normal forms force it) → learn lemma [-8, -10, -11, -12, 13]
+Boolean skeleton is UNSAT after 2 theory lemma(s) → UNSAT overall.
+  [fifo-token    ] HOLDS -> read-over-write proves it, address symbolic
+PROOF HOLDS: both memory contracts proven word-level, address never enumerated.

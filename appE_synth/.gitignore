@@ -1,0 +1,4 @@
+yosys.log
+*.json
+*.blif
+obj_dir/

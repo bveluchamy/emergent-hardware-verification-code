@@ -1,0 +1,10 @@
+// auto-resolved from riscv_instr_gen_config.sv::sp_tp_c by frontend.py
+rand bit [0:0] fix_sp;
+rand bit [4:0] sp;
+rand bit [4:0] tp;
+constraint c {
+  ((!(fix_sp)) || ((1 && (sp == 2))));
+  (sp != tp);
+  (!((sp)==3 || (sp)==1 || (sp)==0));
+  (!((tp)==3 || (tp)==1 || (tp)==0));
+}

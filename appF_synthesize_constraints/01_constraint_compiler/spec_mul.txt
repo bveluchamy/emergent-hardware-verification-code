@@ -1,0 +1,6 @@
+// arithmetic product -> the classifier must route this to Tier-2, not bit-blast
+rand bit [15:0] a;
+rand bit [15:0] b;
+constraint c {
+  a * b < 1000000;
+}

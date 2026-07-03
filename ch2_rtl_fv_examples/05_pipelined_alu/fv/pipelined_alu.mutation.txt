@@ -1,0 +1,139 @@
+DUT: pipelined_alu_mut.sv + pipelined_alu_checker.sv
+  29 state bit(s), 4 input(s)
+  --- safety ---
+── Transition system (frontend output: RTL → state machine) ─────
+state bits (29): ex_reg.valid, ex_reg.rs1_addr, ex_reg.rs2_addr, ex_reg.rd_addr, mem_reg.valid, mem_reg.rd_addr, mem_reg.alu_result[0], mem_reg.alu_result[1], rsp.valid, rsp.rd_addr, rsp.alu_result[0], rsp.alu_result[1], rf.0[0], rf.0[1], rf.1[0], rf.1[1], arch_rf.0[0], arch_rf.0[1], arch_rf.1[0], arch_rf.1[1], __pv0_1[0], __pv0_1[1], __pv0_2[0], __pv0_2[1], __pv0_3[0], __pv0_3[1], __win0_1, __win0_2, __win0_3
+inputs     (4): req.valid, req.rs1_addr, req.rs2_addr, req.rd_addr
+next-state functions  s' = f(s, inputs):
+  ex_reg.valid' = req.valid
+  ex_reg.rs1_addr' = req.rs1_addr
+  ex_reg.rs2_addr' = req.rs2_addr
+  ex_reg.rd_addr' = req.rd_addr
+  mem_reg.valid' = ex_reg.valid
+  mem_reg.rd_addr' = ex_reg.rd_addr
+  mem_reg.alu_result[0]' = ((¬ex_reg.rs1_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬(rsp.rd_addr ⊕ ex_reg.rs1_addr)) ? rsp.alu_result[0] : (¬ex_reg.rs1_addr ? 1'b0 : (¬ex_reg.rs1_addr ? rf.0[0] : rf.1[0])))) ⊕ (¬ex_reg.rs2_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬(rsp.rd_addr ⊕ ex_reg.rs2_addr)) ? rsp.alu_result[0] : (¬ex_reg.rs2_addr ? 1'b0 : (¬ex_reg.rs2_addr ? rf.0[0] : rf.1[0])))))
+  mem_reg.alu_result[1]' = (((¬ex_reg.rs1_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬…) ? rsp.alu_result[1] : (¬ex_reg.rs1_addr ? 1'b0 : (… ? rf.0[1] : rf.1[1])))) ⊕ (¬ex_reg.rs2_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬…) ? rsp.alu_result[1] : (¬ex_reg.rs2_addr ? 1'b0 : (… ? rf.0[1] : rf.1[1]))))) ⊕ ((¬ex_reg.rs1_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬…) ? rsp.alu_result[0] : (¬ex_reg.rs1_addr ? 1'b0 : (… ? rf.0[0] : rf.1[0])))) ∧ (¬ex_reg.rs2_addr ? 1'b0 : (((rsp.valid ∧ rsp.rd_addr) ∧ ¬…) ? rsp.alu_result[0] : (¬ex_reg.rs2_addr ? 1'b0 : (… ? rf.0[0] : rf.1[0]))))))
+  rsp.valid' = mem_reg.valid
+  rsp.rd_addr' = mem_reg.rd_addr
+  rsp.alu_result[0]' = mem_reg.alu_result[0]
+  rsp.alu_result[1]' = mem_reg.alu_result[1]
+  rf.0[0]' = ((rsp.valid ∧ rsp.rd_addr) ? (¬rsp.rd_addr ? rsp.alu_result[0] : rf.0[0]) : rf.0[0])
+  rf.0[1]' = ((rsp.valid ∧ rsp.rd_addr) ? (¬rsp.rd_addr ? rsp.alu_result[1] : rf.0[1]) : rf.0[1])
+  rf.1[0]' = ((rsp.valid ∧ rsp.rd_addr) ? (rsp.rd_addr ? rsp.alu_result[0] : rf.1[0]) : rf.1[0])
+  rf.1[1]' = ((rsp.valid ∧ rsp.rd_addr) ? (rsp.rd_addr ? rsp.alu_result[1] : rf.1[1]) : rf.1[1])
+  arch_rf.0[0]' = ((req.valid ∧ req.rd_addr) ? (¬req.rd_addr ? ((¬req.rs1_addr ? 1'b0 : (¬req.rs1_addr ? arch_rf.0[0] : arch_rf.1[0])) ⊕ (¬req.rs2_addr ? 1'b0 : (¬req.rs2_addr ? arch_rf.0[0] : arch_rf.1[0]))) : arch_rf.0[0]) : arch_rf.0[0])
+  arch_rf.0[1]' = ((req.valid ∧ req.rd_addr) ? (¬req.rd_addr ? (((¬req.rs1_addr ? 1'b0 : (… ? arch_rf.0[1] : arch_rf.1[1])) ⊕ (¬req.rs2_addr ? 1'b0 : (… ? arch_rf.0[1] : arch_rf.1[1]))) ⊕ ((¬req.rs1_addr ? 1'b0 : (… ? arch_rf.0[0] : arch_rf.1[0])) ∧ (¬req.rs2_addr ? 1'b0 : (… ? arch_rf.0[0] : arch_rf.1[0])))) : arch_rf.0[1]) : arch_rf.0[1])
+  arch_rf.1[0]' = ((req.valid ∧ req.rd_addr) ? (req.rd_addr ? ((¬req.rs1_addr ? 1'b0 : (¬req.rs1_addr ? arch_rf.0[0] : arch_rf.1[0])) ⊕ (¬req.rs2_addr ? 1'b0 : (¬req.rs2_addr ? arch_rf.0[0] : arch_rf.1[0]))) : arch_rf.1[0]) : arch_rf.1[0])
+  arch_rf.1[1]' = ((req.valid ∧ req.rd_addr) ? (req.rd_addr ? (((¬req.rs1_addr ? 1'b0 : (… ? arch_rf.0[1] : arch_rf.1[1])) ⊕ (¬req.rs2_addr ? 1'b0 : (… ? arch_rf.0[1] : arch_rf.1[1]))) ⊕ ((¬req.rs1_addr ? 1'b0 : (… ? arch_rf.0[0] : arch_rf.1[0])) ∧ (¬req.rs2_addr ? 1'b0 : (… ? arch_rf.0[0] : arch_rf.1[0])))) : arch_rf.1[1]) : arch_rf.1[1])
+  __pv0_1[0]' = ((¬req.rs1_addr ? 1'b0 : (¬req.rs1_addr ? arch_rf.0[0] : arch_rf.1[0])) ⊕ (¬req.rs2_addr ? 1'b0 : (¬req.rs2_addr ? arch_rf.0[0] : arch_rf.1[0])))
+  __pv0_1[1]' = (((¬req.rs1_addr ? 1'b0 : (¬req.rs1_addr ? arch_rf.0[1] : arch_rf.1[1])) ⊕ (¬req.rs2_addr ? 1'b0 : (¬req.rs2_addr ? arch_rf.0[1] : arch_rf.1[1]))) ⊕ ((¬req.rs1_addr ? 1'b0 : (¬req.rs1_addr ? arch_rf.0[0] : arch_rf.1[0])) ∧ (¬req.rs2_addr ? 1'b0 : (¬req.rs2_addr ? arch_rf.0[0] : arch_rf.1[0]))))
+  __pv0_2[0]' = __pv0_1[0]
+  __pv0_2[1]' = __pv0_1[1]
+  __pv0_3[0]' = __pv0_2[0]
+  __pv0_3[1]' = __pv0_2[1]
+  __win0_1' = req.valid
+  __win0_2' = __win0_1
+  __win0_3' = __win0_2
+reset state: ex_reg.valid=0, ex_reg.rs1_addr=0, ex_reg.rs2_addr=0, ex_reg.rd_addr=0, mem_reg.valid=0, mem_reg.rd_addr=0, mem_reg.alu_result[0]=0, mem_reg.alu_result[1]=0, rsp.valid=0, rsp.rd_addr=0, rsp.alu_result[0]=0, rsp.alu_result[1]=0, rf.0[0]=0, rf.0[1]=0, rf.1[0]=1, rf.1[1]=0, arch_rf.0[0]=0, arch_rf.0[1]=0, arch_rf.1[0]=1, arch_rf.1[1]=0, __pv0_1[0]=0, __pv0_1[1]=0, __pv0_2[0]=0, __pv0_2[1]=0, __pv0_3[0]=0, __pv0_3[1]=0, __win0_1=0, __win0_2=0, __win0_3=0
+property holds when NOT bad, where  bad = ¬((¬rsp.valid ∨ (¬(rsp.alu_result[0] ⊕ __pv0_3[0]) ∧ ¬(rsp.alu_result[1] ⊕ __pv0_3[1]))) ∧ (¬__win0_3 ∨ rsp.valid))
+── Tseitin encoding of `bad` → CNF (the V8's fuel) ──────────────
+introduce one Boolean per gate; each gate's clauses force aux ⇔ gate:
+(rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0)  ⇔  xor(rsp.alu_result[0]@0, __pv0_3[0]@0)
+  (¬(rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0) ∨ ¬rsp.alu_result[0]@0 ∨ ¬__pv0_3[0]@0)
+  (¬(rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0) ∨ rsp.alu_result[0]@0 ∨ __pv0_3[0]@0)
+  ((rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0) ∨ ¬rsp.alu_result[0]@0 ∨ __pv0_3[0]@0)
+  ((rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0) ∨ rsp.alu_result[0]@0 ∨ ¬__pv0_3[0]@0)
+(rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0)  ⇔  xor(rsp.alu_result[1]@0, __pv0_3[1]@0)
+  (¬(rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0) ∨ ¬rsp.alu_result[1]@0 ∨ ¬__pv0_3[1]@0)
+  (¬(rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0) ∨ rsp.alu_result[1]@0 ∨ __pv0_3[1]@0)
+  ((rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0) ∨ ¬rsp.alu_result[1]@0 ∨ __pv0_3[1]@0)
+  ((rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0) ∨ rsp.alu_result[1]@0 ∨ ¬__pv0_3[1]@0)
+g36  ⇔  and(¬(rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0), ¬(rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0))
+  (¬g36 ∨ ¬(rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0))
+  (¬g36 ∨ ¬(rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0))
+  (g36 ∨ (rsp.alu_result[0]@0 ⊕ __pv0_3[0]@0) ∨ (rsp.alu_result[1]@0 ⊕ __pv0_3[1]@0))
+(¬rsp.valid@0 ∨ g36)  ⇔  or(¬rsp.valid@0, g36)
+  (¬(¬rsp.valid@0 ∨ g36) ∨ ¬rsp.valid@0 ∨ g36)
+  ((¬rsp.valid@0 ∨ g36) ∨ rsp.valid@0)
+  ((¬rsp.valid@0 ∨ g36) ∨ ¬g36)
+(¬__win0_3@0 ∨ rsp.valid@0)  ⇔  or(¬__win0_3@0, rsp.valid@0)
+  (¬(¬__win0_3@0 ∨ rsp.valid@0) ∨ ¬__win0_3@0 ∨ rsp.valid@0)
+  ((¬__win0_3@0 ∨ rsp.valid@0) ∨ __win0_3@0)
+  ((¬__win0_3@0 ∨ rsp.valid@0) ∨ ¬rsp.valid@0)
+g39  ⇔  and((¬rsp.valid@0 ∨ g36), (¬__win0_3@0 ∨ rsp.valid@0))
+  (¬g39 ∨ (¬rsp.valid@0 ∨ g36))
+  (¬g39 ∨ (¬__win0_3@0 ∨ rsp.valid@0))
+  (g39 ∨ ¬(¬rsp.valid@0 ∨ g36) ∨ ¬(¬__win0_3@0 ∨ rsp.valid@0))
+finally assert the top gate: (¬g39)
+→ 39 variables, 20 multi-literal clauses in this encoding
+
+── IC3 / PDR -- frames of over-approximation, no unrolling ──────
+F_0=Init, each F_i ⊇ states reachable in ≤i steps and ⊆ P. Push bad
+cubes backward; a cube with no predecessor gives a clause to block it.
+frontier k=1: any state in F_1 that can step to bad?
+  ternary lift: 29-bit minterm → 2 literal(s) (23 outside the targets' cone, 4 X'd by simulation)
+  found a bad predecessor {!rsp.valid & __win0_3} in F_1; discharge it backward
+  obligation {!rsp.valid & __win0_3} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/2 literals and
+    learn (!__win0_3) into F_1..F_1
+  ternary lift: 29-bit minterm → 3 literal(s) (23 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {rsp.valid & !rsp.alu_result[1] & __pv0_3[1]} in F_1; discharge it backward
+  obligation {rsp.valid & !rsp.alu_result[1] & __pv0_3[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!__pv0_3[1]) into F_1..F_1
+  ternary lift: 29-bit minterm → 3 literal(s) (23 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {rsp.valid & !rsp.alu_result[0] & __pv0_3[0]} in F_1; discharge it backward
+  obligation {rsp.valid & !rsp.alu_result[0] & __pv0_3[0]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!__pv0_3[0]) into F_1..F_1
+  ternary lift: 29-bit minterm → 3 literal(s) (23 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {rsp.valid & rsp.alu_result[1] & !__pv0_3[1]} in F_1; discharge it backward
+  obligation {rsp.valid & rsp.alu_result[1] & !__pv0_3[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!rsp.alu_result[1]) into F_1..F_1
+  ternary lift: 29-bit minterm → 3 literal(s) (23 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {rsp.valid & rsp.alu_result[0] & !__pv0_3[0]} in F_1; discharge it backward
+  obligation {rsp.valid & rsp.alu_result[0] & !__pv0_3[0]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!rsp.alu_result[0]) into F_1..F_1
+  F_1 frontier is clean (no move to bad)
+frontier k=2: any state in F_2 that can step to bad?
+  ternary lift: 29-bit minterm → 2 literal(s) (23 outside the targets' cone, 4 X'd by simulation)
+  found a bad predecessor {!rsp.valid & __win0_3} in F_2; discharge it backward
+    ternary lift: 29-bit minterm → 2 literal(s) (27 outside the targets' cone, 0 X'd by simulation)
+  obligation {!rsp.valid & __win0_3} @F_2: has a predecessor {!mem_reg.valid & __win0_2} in F_1 → block that first
+  obligation {!mem_reg.valid & __win0_2} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/2 literals and
+    learn (!__win0_2) into F_1..F_1
+  obligation {!rsp.valid & __win0_3} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 1/2 literals and
+    learn (!__win0_3) into F_1..F_2
+    ternary lift: 29-bit minterm → 2 literal(s) (27 outside the targets' cone, 0 X'd by simulation)
+  obligation {!mem_reg.valid & __win0_2} @F_2: has a predecessor {!ex_reg.valid & __win0_1} in F_1 → block that first
+  obligation {!ex_reg.valid & __win0_1} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/2 literals and
+    learn (ex_reg.valid | !__win0_1) into F_1..F_1
+  obligation {!mem_reg.valid & __win0_2} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 2/2 literals and
+    learn (mem_reg.valid | !__win0_2) into F_1..F_2
+  obligation {!ex_reg.valid & __win0_1} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 2/2 literals and
+    learn (ex_reg.valid | !__win0_1) into F_1..F_2
+  ternary lift: 29-bit minterm → 3 literal(s) (23 outside the targets' cone, 3 X'd by simulation)
+  found a bad predecessor {rsp.valid & !rsp.alu_result[1] & __pv0_3[1]} in F_2; discharge it backward
+    ternary lift: 29-bit minterm → 3 literal(s) (26 outside the targets' cone, 0 X'd by simulation)
+  obligation {rsp.valid & !rsp.alu_result[1] & __pv0_3[1]} @F_2: has a predecessor {mem_reg.valid & !mem_reg.alu_result[1] & __pv0_2[1]} in F_1 → block that first
+  obligation {mem_reg.valid & !mem_reg.alu_result[1] & __pv0_2[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!mem_reg.valid) into F_1..F_1
+  obligation {rsp.valid & !rsp.alu_result[1] & __pv0_3[1]} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 1/3 literals and
+    learn (!rsp.valid) into F_1..F_2
+    ternary lift: 29-bit minterm → 8 literal(s) (17 outside the targets' cone, 4 X'd by simulation)
+  obligation {mem_reg.valid & !mem_reg.alu_result[1] & __pv0_2[1]} @F_2: has a predecessor {ex_reg.valid & !rsp.alu_result[0] & !rsp.alu_result[1] & !rf.0[0] & !rf.0[1] & !rf.1[0] & !rf.1[1] & __pv0_1[1]} in F_1 → block that first
+  obligation {ex_reg.valid & !rsp.alu_result[0] & !rsp.alu_result[1] & !rf.0[0] & !rf.0[1] & !rf.1[0] & !rf.1[1] & __pv0_1[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 1/8 literals and
+    learn (rf.1[0]) into F_1..F_1
+    ternary lift: 29-bit minterm → 6 literal(s) (17 outside the targets' cone, 6 X'd by simulation)
+  obligation {mem_reg.valid & !mem_reg.alu_result[1] & __pv0_2[1]} @F_2: has a predecessor {ex_reg.valid & !ex_reg.rs2_addr & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & __pv0_1[1]} in F_1 → block that first
+  obligation {ex_reg.valid & !ex_reg.rs2_addr & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & __pv0_1[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/6 literals and
+    learn (ex_reg.rs2_addr | !__pv0_1[1]) into F_1..F_1
+  obligation {ex_reg.valid & !rsp.alu_result[0] & !rsp.alu_result[1] & !rf.0[0] & !rf.0[1] & !rf.1[0] & !rf.1[1] & __pv0_1[1]} @F_2: no predecessor in F_1 → ¬cube is inductive; generalize to 1/8 literals and
+    learn (rf.1[0]) into F_1..F_2
+    ternary lift: 29-bit minterm → 6 literal(s) (17 outside the targets' cone, 6 X'd by simulation)
+  obligation {mem_reg.valid & !mem_reg.alu_result[1] & __pv0_2[1]} @F_2: has a predecessor {ex_reg.valid & !ex_reg.rs1_addr & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & __pv0_1[1]} in F_1 → block that first
+  obligation {ex_reg.valid & !ex_reg.rs1_addr & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & __pv0_1[1]} @F_1: no predecessor in F_0 → ¬cube is inductive; generalize to 2/6 literals and
+    learn (ex_reg.rs1_addr | !__pv0_1[1]) into F_1..F_1
+    ternary lift: 29-bit minterm → 5 literal(s) (19 outside the targets' cone, 5 X'd by simulation)
+  obligation {ex_reg.valid & !ex_reg.rs2_addr & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & __pv0_1[1]} @F_2: has a predecessor {!mem_reg.alu_result[1] & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & arch_rf.1[1]} in F_1 → block that first
+    ternary lift: 29-bit minterm → 7 literal(s) (14 outside the targets' cone, 8 X'd by simulation)
+  obligation {!mem_reg.alu_result[1] & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & arch_rf.1[1]} @F_1: has a predecessor {!ex_reg.rs2_addr & !mem_reg.alu_result[1] & !rsp.alu_result[1] & !rf.0[1] & !rf.1[1] & arch_rf.1[0] & !arch_rf.1[1]} in F_0 → block that first
+  obligation reached Init → the bad state is reachable → UNSAFE
+  [IC3/PDR       ] UNSAFE -> a real counterexample

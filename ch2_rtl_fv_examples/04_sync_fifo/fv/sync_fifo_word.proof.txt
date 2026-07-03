@@ -1,0 +1,6 @@
+DUT: sync_fifo.sv + sync_fifo_word_props.sv (word-level: 6 state, 1 memory kept symbolic)
+── word-level BMC of sync_fifo: unroll 0 frames, memory kept symbolic ───
+  no ¬prop through depth 0 -> SAFE up to 0
+── word-level k-induction of sync_fifo at k=1 ───────────────────
+  [word k-induction] HOLDS -> proved with the memory address symbolic (array theory), never bit-blasted
+PROOF HOLDS: the memory contract holds word-level.
