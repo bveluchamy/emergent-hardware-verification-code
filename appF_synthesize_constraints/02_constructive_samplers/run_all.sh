@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Reproduce every result in 02_constructive_samplers. Needs: lean (export PATH=$HOME/.elan/bin:$PATH),
-# python3, verilator, yosys, z3.  Research sandbox -- touches nothing in the book.
+# Build and run every constructive sampler in this directory. Needs: lean
+# (export PATH=$HOME/.elan/bin:$PATH), python3, verilator, yosys, z3.
 set -e
 cd "$(dirname "$0")"
 HR() { printf '\n========== %s ==========\n' "$1"; }

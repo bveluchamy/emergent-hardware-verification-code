@@ -62,7 +62,7 @@ def dedupN : List Nat → List Nat := List.foldr (fun x acc => if x ∈ acc then
 /-- DAG node count = distinct used-masks. -/
 def nodeCount (D NV : Nat) : Nat := (dedupN (masks D 0 NV)).length
 
--- ───────────────────────── the storage win, MEASURED ─────────────────────────
+-- ───────────────────────── the storage win ─────────────────────────
 #eval nodeCount 6 6        -- 64   DAG nodes
 #eval cntP 6 0 6           -- 720  permutations represented   (64 ≪ 720)
 #eval nodeCount 7 7        -- 128  DAG nodes

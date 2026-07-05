@@ -1,4 +1,4 @@
-// color_uip_dram_syn.v -- Verilog-2005 synthesis model of color_uip_dram.sv (POC-4g).
+// color_uip_dram_syn.v -- Verilog-2005 synthesis model of color_uip_dram.sv.
 // Mirrors the SV so verilator confirms it matches, and yosys can measure the area: LUTs
 // flat as the cache (OCCMAX) deepens, depth living in BRAM. 2D arrays flattened; functions
 // in Verilog-2005 style (no break, guarded scans).

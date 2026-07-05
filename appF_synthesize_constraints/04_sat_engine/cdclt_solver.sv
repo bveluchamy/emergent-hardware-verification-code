@@ -1,6 +1,6 @@
-// cdclt_solver.sv -- 04_sat_engine POC(4): CDCL(T) model-finder on the fabric.
+// cdclt_solver.sv -- 04_sat_engine: CDCL(T) model-finder on the fabric.
 //
-// POC(3) (DPLL(T): LIA + all-different + Tier-2 product propagator) PLUS conflict-driven
+// DPLL(T) (dpllt_solver.sv: LIA + all-different + Tier-2 product propagator) PLUS conflict-driven
 // clause learning -- the "CDCL" of Chapter 3, simplified to MODEL-FINDING:
 //
 //   * On each conflict, learn a NOGOOD = negation of the current decision set
@@ -15,9 +15,8 @@
 //   * UNSAT is never proven -- a satisfiable instance always yields a model; an
 //     unsatisfiable live state would be "withhold", not a solver event.
 //
-// LEARN=0 => plain DPLL(T) (POC(3)); LEARN=1 => CDCL(T). Same instance, so the
-// measured backtrack/cycle delta is the value of learning, on the fabric.
-// Validated with verilator. Book main.tex untouched.
+// LEARN=0 => plain DPLL(T); LEARN=1 => CDCL(T). Same instance, so the
+// backtrack/cycle delta isolates the effect of learning, on the fabric.
 
 module cdclt_solver #(
   parameter int NV     = 5,

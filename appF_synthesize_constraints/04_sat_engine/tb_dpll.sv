@@ -1,4 +1,4 @@
-// tb_dpll.sv -- 04_sat_engine POC(1) measurement harness.
+// tb_dpll.sv -- 04_sat_engine DPLL measurement harness.
 // Drives the DPLL engine, asserts every emitted sample is legal (the soundness
 // check), and measures cycles/sample + backtracks/sample against the ~240-cycle
 // emulation budget. Distinct-solution count cross-checks coverage vs solve_ref.py.
@@ -54,7 +54,7 @@ module tb_top;
       if (!seenflag[code]) begin seenflag[code] = 1'b1; nseen++; end
 
       if (ns >= K) begin
-        $display("=== 04_sat_engine POC(1): DPLL-on-actors, %0d samples ===", ns);
+        $display("=== 04_sat_engine: DPLL-on-actors, %0d samples ===", ns);
         $display("constraint: 5 vars in [1,9], all-different, sum==25, v0<v1");
         $display("");
         $display("cycles/sample      : mean=%0.1f  max=%0d   (budget ~240 fabric cyc/sample)", real'(sumgap)/ns, maxgap);

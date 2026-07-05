@@ -3,7 +3,7 @@
 
   L1 left `BudgetGap` open: a guaranteed ≤-budget bound needs a
   propagation-completeness lemma. This proves one real piece of it — the
-  SUM constraint's forcing power — generally, not just for the POC-1 numbers.
+  SUM constraint's forcing power — generally, not just for the concrete instance.
 
   The fact: with `sum == S` and all-different, once NV-1 variables are fixed, the
   last is FORCED to `S - Σothers` (bounds-propagation determines it, no branch).
@@ -49,7 +49,7 @@ theorem sum_cuts_leaf_bound (DW NV : Nat) (h : NV + 1 ≤ DW) :
     ff DW (NV + 1) = ff DW NV * (DW - NV) ∧ 1 ≤ DW - NV :=
   ⟨ff_peel_last DW NV (by omega), by omega⟩
 
--- POC-1 (DW=9, NV=5): the sum forces the 5th variable ⇒ 15120 → 3024 (factor 5).
+-- Concrete instance (DW=9, NV=5): the sum forces the 5th variable ⇒ 15120 → 3024 (factor 5).
 #eval ff 9 5            -- 15120  (L1's all-different bound)
 #eval ff 9 4            -- 3024   (with the sum forcing the last var)
 example : ff 9 5 = ff 9 4 * (9 - 4) := ff_peel_last 9 4 (by omega)   -- 15120 = 3024 * 5, PROVED

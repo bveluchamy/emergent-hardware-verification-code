@@ -1,13 +1,13 @@
-// color_uip_tr_syn.v -- POC-4i: sequential-CA 1-UIP engine with a SEQUENTIAL-BRAM TRAIL.
+// color_uip_tr_syn.v -- sequential-CA 1-UIP engine with a SEQUENTIAL-BRAM TRAIL.
 //
-// POC-4h sequentialized the conflict analysis but yosys still could not even elaborate the
+// color_uip_seq.sv sequentialized the conflict analysis but yosys still could not even elaborate the
 // engine, because the TRAIL save/restore was an N-wide block access at a VARIABLE base
 // (svm[lvl*N+i]) -- yosys's proc expands that explosively. This restructures the trail into
 // a single-port BRAM accessed ONE NODE PER CYCLE (the same pattern the BCP cache sweep uses):
 //   SAVE  -- write D[i] -> svm_mem[base+i], one i/cycle (DECIDE).
 //   REST  -- read svm_mem[base+i] -> D[i], one i/cycle, pipelined (conflict/backjump/BT).
 // So svm_mem has one write port and one read port at fixed-width sequential addresses.
-// Same algorithm as POC-4h; more cycles. Verilog-2005, for yosys. Book main.tex untouched.
+// Same algorithm as color_uip_seq.sv; more cycles. Verilog-2005, for yosys.
 
 // NOTE: small default N so yosys's read_verilog (which unrolls behavioural for-loops at parse
 // time -- the propagation is O(N^2)) stays fast; override with -chparam for larger N.

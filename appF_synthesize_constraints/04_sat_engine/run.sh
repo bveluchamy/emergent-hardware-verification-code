@@ -1,6 +1,6 @@
 #!/bin/sh
-# 04_sat_engine POC(1): build + measure the synthesizable DPLL residue solver.
-# Book main.tex untouched. Needs verilator; yosys + nextpnr-ice40 for area/Fmax.
+# 04_sat_engine: build + measure the synthesizable DPLL residue solver.
+# Needs verilator; yosys + nextpnr-ice40 for area/Fmax.
 set -e
 cd "$(dirname "$0")"
 

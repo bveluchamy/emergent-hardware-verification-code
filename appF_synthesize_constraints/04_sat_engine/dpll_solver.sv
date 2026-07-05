@@ -1,4 +1,4 @@
-// dpll_solver.sv -- 04_sat_engine POC(1): synthesizable finite-domain DPLL engine.
+// dpll_solver.sv -- 04_sat_engine: synthesizable finite-domain DPLL engine.
 //
 // The R3 residue, on the fabric. A small finite-domain constraint that genuinely
 // needs SEARCH (bounds/all-different propagation alone does not close it):
@@ -8,7 +8,7 @@
 //     v0 + v1 + v2 + v3 + v4 == 25     <- LIA budget (bound propagation, the bulk)
 //     v0 < v1                          <- one LIA ordering
 //
-// Engine = the DESIGN.md architecture:
+// Engine architecture:
 //   - bitset domains (9b/var), all-different propagated Sudoku-style (extends sudoku_net)
 //   - LIA sum bound-propagation reasoned over the [min,max] of each bitset
 //     (constant-coefficient datapath; coeffs are 1 here -> pure add; a general a_i
@@ -16,7 +16,6 @@
 //   - Boolean shell: decide-via-LFSR + trail + chronological backtrack
 //   - model-finding only: emits one legal assignment per search, reseeded each time
 //
-// Validated with verilator (see run.sh). Book main.tex untouched.
 
 module dpll_solver #(
   parameter int NV  = 5,    // variables

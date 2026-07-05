@@ -1,11 +1,11 @@
-// color_uip_seq.sv -- 04_sat_engine POC(4h): 1-UIP CDCL with SEQUENTIAL conflict analysis.
+// color_uip_seq.sv -- 04_sat_engine: 1-UIP CDCL with SEQUENTIAL conflict analysis.
 //
-// POC-4g's 1-UIP analysis was one giant always_comb (reason_of/covered/find-p scan the
+// The combinational 1-UIP analysis in color_uip_dram.sv was one giant always_comb (reason_of/covered/find-p scan the
 // neighbour & domain memories O(N^2), unrolled) -- always-live logic, abc-hostile, so yosys
 // could not even elaborate it. This version moves the conflict-analysis scans into on-demand
 // SEQUENTIAL sub-FSMs: one neighbour per cycle, registered accumulators. The per-cycle
 // combinational logic becomes O(1) per scan, so the engine synthesizes. Same 1-UIP algorithm
-// (verified to reproduce POC-4g's backtrack count); it just spreads each scan over cycles.
+// (reproduces color_uip_dram.sv's backtrack count exactly); it just spreads each scan over cycles.
 //
 //   REASON  -- for a node, find for each missing colour the earliest neighbour holding it
 //              (the antecedent). Used for the conflict node and for each resolved literal.
@@ -14,8 +14,7 @@
 //   FINAL   -- read off the backjump level and the UIP.
 //   ENUM    -- enumerate the clause's nodes into storable (node,colour) slots.
 //
-// The clause cache is the DRAM-resident occurrence-indexed pipelined sweep from POC-4b/c.
-// Validated with verilator. Book main.tex untouched.
+// The clause cache is the DRAM-resident occurrence-indexed pipelined sweep (see cdclt_dram.sv / cdclt_dram_p.sv).
 
 module color_uip_seq #(
   parameter int N = 64,

@@ -1,4 +1,4 @@
-// tb_cdclt.sv -- 04_sat_engine POC(4) harness. LEARN is a top param so verilator
+// tb_cdclt.sv -- 04_sat_engine CDCL(T) harness. LEARN is a top param so verilator
 // -GLEARN=0 / -GLEARN=1 build plain DPLL(T) vs CDCL(T) on the SAME instance.
 
 module tb_top #(parameter int LEARN = 1, parameter int PLIMIT = 20, parameter int NGMAX = 16);
@@ -44,7 +44,7 @@ module tb_top #(parameter int LEARN = 1, parameter int PLIMIT = 20, parameter in
       if (!seenflag[code]) begin seenflag[code] = 1'b1; nseen++; end
 
       if (ns >= K) begin
-        $display("=== 04_sat_engine POC(4): CDCL(T), LEARN=%0d, %0d samples ===", LEARN, ns);
+        $display("=== 04_sat_engine: CDCL(T), LEARN=%0d, %0d samples ===", LEARN, ns);
         $display("cycles/sample     : mean=%0.2f max=%0d", real'(sumgap)/ns, maxgap);
         $display("backtracks/sample : mean=%0.3f max=%0d", real'(sumbt)/ns, maxbt);
         $display("distinct solutions: %0d", nseen);

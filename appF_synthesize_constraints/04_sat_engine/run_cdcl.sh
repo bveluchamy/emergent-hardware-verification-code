@@ -1,17 +1,17 @@
 #!/bin/sh
-# 04_sat_engine POC(3)+(4): DPLL(T) with Tier-2 propagator, and CDCL(T) learning.
-# Book main.tex untouched. Needs verilator; yosys for area.
+# 04_sat_engine: DPLL(T) with Tier-2 propagator, and CDCL(T) learning.
+# Needs verilator; yosys for area.
 set -e
 cd "$(dirname "$0")"
 VF="--binary -j 0 --timing -Wno-fatal -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC --top-module tb_top"
 
-echo "== POC(3) DPLL(T): Tier-2 nonlinear propagator (v2*v3<20), reference + run =="
+echo "== DPLL(T): Tier-2 nonlinear propagator (v2*v3<20), reference + run =="
 python3 solve_ref_t.py 20
 rm -rf obj_dir; verilator $VF tb_dpllt.sv dpllt_solver.sv >/dev/null 2>&1
 ./obj_dir/Vtb_top +K="${K:-200000}"
 
 echo ""
-echo "== POC(4) CDCL(T): learning on/off, cache-size sweep (same instance) =="
+echo "== CDCL(T): learning on/off, cache-size sweep (same instance) =="
 for cfg in "0 16" "1 16" "1 64" "1 256"; do
   set -- $cfg
   rm -rf obj_dir

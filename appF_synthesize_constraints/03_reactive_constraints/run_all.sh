@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Reproduce the 03_reactive_constraints reactive / network / pipelined POCs.
-# Needs verilator, yosys, nextpnr-ice40.  Research sandbox -- book untouched.
+# Reproduce the 03_reactive_constraints reactive / network / pipelined examples.
+# Needs verilator, yosys, nextpnr-ice40.
 set -e
 cd "$(dirname "$0")"
 HR() { printf '\n========== %s ==========\n' "$1"; }
@@ -25,4 +25,4 @@ HR "Wide A*B<LIMIT: iterative divider, multi-cycle burst, high Fmax"
   nextpnr-ice40 --hx8k --package ct256 --json /tmp/pd.json --freq 100 --seed 1 2>&1 \
     | grep -iE 'Max frequency for clock' | tail -1; rm -f /tmp/pd.json )
 
-HR "done -- see BRAINSTORM.md for the architecture + the 5 sketched examples"
+HR "done"

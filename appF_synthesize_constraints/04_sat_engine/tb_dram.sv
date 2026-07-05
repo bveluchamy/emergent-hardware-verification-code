@@ -1,4 +1,4 @@
-// tb_dram.sv -- 04_sat_engine POC(4b) harness for the DRAM-backed sequential BCP engine.
+// tb_dram.sv -- 04_sat_engine harness for the DRAM-backed sequential BCP engine.
 
 module tb_top #(parameter int PLIMIT = 20, parameter int NGCAP = 512, parameter int OCCMAX = 16);
   localparam int NV = 5;
@@ -43,7 +43,7 @@ module tb_top #(parameter int PLIMIT = 20, parameter int NGCAP = 512, parameter 
       if (!seenflag[code]) begin seenflag[code]=1'b1; nseen++; end
 
       if (ns>=K) begin
-        $display("=== POC(4b) DRAM-backed seq BCP: NGCAP=%0d OCCMAX=%0d, %0d samples ===", NGCAP, OCCMAX, ns);
+        $display("=== DRAM-backed seq BCP: NGCAP=%0d OCCMAX=%0d, %0d samples ===", NGCAP, OCCMAX, ns);
         $display("cycles/sample     : mean=%0.2f max=%0d", real'(sumgap)/ns, maxgap);
         $display("backtracks/sample : mean=%0.3f max=%0d", real'(sumbt)/ns, maxbt);
         $display("distinct solutions: %0d", nseen);

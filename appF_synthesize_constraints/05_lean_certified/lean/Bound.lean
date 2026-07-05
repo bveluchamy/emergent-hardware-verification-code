@@ -1,8 +1,8 @@
 /-
   Bound.lean — 05_lean_certified / L1: a PROVED termination + step bound for the
-  POC-1 finite-domain residue solver (04_sat_engine/dpll_solver.sv).
+  finite-domain residue solver (04_sat_engine/dpll_solver.sv).
 
-  POC-1 MEASURED 20.6 cycles/sample (max 28). DESIGN.md §6/§7 then needs a
+  The residue solver runs at ~20.6 cycles/sample (max 28), which then needs a
   cycle-budget WATCHDOG + host-fallback seam, precisely because the budget fit
   was OBSERVED, not GUARANTEED. This file turns the observation into a theorem:
   the search visits a BOUNDED number of nodes, so it runs in bounded cycles, so
@@ -107,7 +107,7 @@ theorem leaves_ffact_le : ∀ (DW : Nat) (doms : Doms),
     simp only [leaves, ffact, List.length_cons]
     exact Nat.mul_le_mul hd ihr
 
--- ───────────────────────── concrete: POC-1 instance ─────────────────────────
+-- ───────────────────────── concrete instance ─────────────────────────
 -- 5 vars in [1,9], all-different, sum==25, v0<v1.  NV=5, DW=9.
 
 def poc1_generic_bound : Nat := gsum 9 5     -- worst case, no propagation
@@ -127,7 +127,7 @@ example : leaves [[1,2,3],[4,5],[6]] = 3 * 2 * 1 := by native_decide
 
   Proved here: the search is BOUNDED (synthesizable), and all-different alone
   drops the bound from 9^5=59049 to the falling factorial 9·8·7·6·5=15120.
-  Both are ≫ the ~240-cycle budget. The MEASURED leaf count is ≈ 1.3 (0.31
+  Both are ≫ the ~240-cycle budget. The observed leaf count is ≈ 1.3 (0.31
   backtracks/sample), so the true tree is tiny — because the sum==25 and v0<v1
   constraints, conjoined with all-different, make propagation nearly complete.
 
