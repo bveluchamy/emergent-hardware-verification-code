@@ -1,7 +1,7 @@
 /-
   Sampler.lean — 05_lean_certified / L2: the CONSTRUCTIVE certified sampler.
 
-  The model-finding half of the prover, made concrete (DESIGN.md §0). A
+  The model-finding half of the prover, made concrete. A
   constraint is a decidable Bool predicate `P : Asn → Bool` (this is the
   CHECKER — already synthesizable). Its legal set is enumerated at COMPILE TIME;
   the sampler is the index→witness map
@@ -66,7 +66,7 @@ theorem mem_legal (P : Asn → Bool) (doms : List (List Nat)) (a : Asn) :
   List.mem_filter
 
 -- ─────────────────────── concrete instance + extraction ─────────────────────
--- 3 vars in [1,4], all-different, sum==6, v0<v1.  (a small POC-1 cousin.)
+-- 3 vars in [1,4], all-different, sum==6, v0<v1.  (a small cousin of the residue constraint.)
 
 def allDiffB : Asn → Bool
   | []      => true

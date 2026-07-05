@@ -1,18 +1,18 @@
-// color_uip_dram.sv -- 04_sat_engine POC(4g): the DEPLOYABLE engine.
+// color_uip_dram.sv -- 04_sat_engine: the DEPLOYABLE engine.
 //
-// Composition of the two halves the arc built separately:
-//   * the BRAIN  -- true 1-UIP conflict analysis + non-chronological backjump (POC-4f).
+// Composition of the two halves, built separately:
+//   * the BRAIN  -- true 1-UIP conflict analysis + non-chronological backjump (color_uip.sv).
 //   * the SUBSTRATE -- a DRAM-resident, occurrence-indexed, pipelined sequential clause
-//     cache (POC-4b/4c): flat logic, depth in memory, not O(cache) LUTs.
+//     cache (cdclt_dram.sv / cdclt_dram_p.sv): flat logic, depth in memory, not O(cache) LUTs.
 //
-// POC-4f proved 1-UIP flips the verdict but used a parallel-combinational cache (free
-// cycles, O(NG) LUTs -- the POC-4 blow-up). Here the learned 1-UIP clauses instead live in
+// color_uip.sv showed 1-UIP flips the verdict but used a parallel-combinational cache (free
+// cycles, O(NG) LUTs -- the register-cache LUT blow-up). Here the learned 1-UIP clauses instead live in
 // a memory (the DRAM stand-in), DENORMALIZED into per-literal occurrence lists, and BCP is
 // a PIPELINED sequential sweep triggered on each decision. The 1-UIP analysis itself is
 // unchanged; only how clauses are stored and propagated changes. After a backjump the
 // asserting clause is applied directly (ngf[uip]); the stored clause gives cross-branch
 // pruning via the sweep. Per-sample cache clear keeps the conflict reasons pure (the
-// soundness guard from POC-4f). Validated with verilator. Book main.tex untouched.
+// soundness guard).
 
 module color_uip_dram #(
   parameter int N = 64,
@@ -98,7 +98,7 @@ module color_uip_dram #(
     end
   end
 
-  // ---- 1-UIP conflict analysis (identical to POC-4f) ----
+  // ---- 1-UIP conflict analysis (identical to color_uip.sv) ----
   function automatic logic [N-1:0] reason_of(input logic [LW-1:0] node, input logic [1:0] skip,
                                              input int maxord);
     logic [N-1:0] r; r='0;

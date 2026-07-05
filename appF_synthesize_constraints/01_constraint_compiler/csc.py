@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-csc.py -- Constraint -> Synthesizable-sampler Compiler.  A REAL flow (not a
-hand-coded POC): it parses a restricted-SystemVerilog constraint spec, classifies
+csc.py -- Constraint -> Synthesizable-sampler Compiler.  An end-to-end flow: it
+parses a restricted-SystemVerilog constraint spec, classifies
 it, and auto-emits a synthesizable UNRANK sampler + a synthesizable CHECKER + a
 self-checking testbench, then the driver validates with verilator + yosys.
 
@@ -523,7 +523,7 @@ def main():
               "constructive arithmetic template (02_constructive_samplers/03_reactive_constraints), not the BDD.")
         return
     if nvars > 18:
-        print(f"[csc] {nvars} vars > 18: enumeration BDD too wide for this POC; "
+        print(f"[csc] {nvars} vars > 18: enumeration BDD too wide; "
               "swap in CUDD apply-based construction."); return
     print("[csc] CLASSIFY -> Tier-1 (boolean/relational): enumeration BDD + unrank.")
     nodes, root, nsol = compile_bdd(fields, consts, nvars)

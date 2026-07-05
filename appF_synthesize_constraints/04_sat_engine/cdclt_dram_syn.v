@@ -1,7 +1,7 @@
-// cdclt_dram_syn.v -- Verilog-2005 synthesis model of cdclt_dram.sv (POC(4b)).
+// cdclt_dram_syn.v -- Verilog-2005 synthesis model of cdclt_dram.sv.
 // Mirrors the SV exactly (substrate-identity) and lets yosys show the area story:
 // LUT count is small and ~FLAT in NGCAP (the deep cache is BRAM, not logic), unlike
-// POC(4)'s parallel cache whose LUTs exploded with depth. 2D arrays flattened.
+// cdclt_solver.sv's parallel cache whose LUTs exploded with depth. 2D arrays flattened.
 
 module cdclt_dram #(
   parameter NV=5, DW=9, SUM=25, PA=2, PB=3, PLIMIT=20, NGCAP=512, OCCMAX=16

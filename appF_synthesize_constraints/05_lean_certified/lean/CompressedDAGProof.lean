@@ -1,7 +1,7 @@
 /-
   CompressedDAGProof.lean — 05_lean_certified / L12: L10's DAG walk is correct FOR ALL D.
 
-  L10 measured the storage win (2^D nodes / D! leaves) and `native_decide`-validated
+  L10 computed the storage win (2^D nodes / D! leaves) and `native_decide`-validated
   the DAG unrank on D=4,5. This upgrades that validation to a THEOREM:
 
       unrankP_eq : R < cntP D used rem → (perms D used rem)[R]? = some (unrankP …)

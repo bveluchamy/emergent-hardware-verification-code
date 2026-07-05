@@ -1,12 +1,12 @@
-// color_wide.sv -- 04_sat_engine POC(4e), wide coloring engine (N=64) for the deep-search
+// color_wide.sv -- 04_sat_engine, wide coloring engine (N=64) for the deep-search
 // flip. Adjacency loaded via $readmemh(nbr.hex) so density can be swept without rebuild.
 // LEARN=0: plain DPLL(T-free) coloring. LEARN=1: antecedent (first-UIP-style) nogood
 // learning with a DRAM-resident, pipelined, occurrence-indexed BCP cache.
 //
 // At this scale (N=64, near the 3-colouring threshold) the search is deep even with full
 // unit propagation -- the regime where clause learning is supposed to beat DPLL. Planted
-// instances (gen5.py) are SAT by construction. Validated with verilator (sim experiment;
-// wide engine targets emulator-class resources, not the iCE40 POC part).
+// instances (gen5.py) are SAT by construction. The wide engine targets emulator-class
+// resources, not the small iCE40 part.
 
 module color_wide #(
   parameter int N = 64,

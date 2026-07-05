@@ -1,82 +1,112 @@
-# 01_constraint_compiler: a constraint -> synthesizable-sampler compiler (the step past POC)
+# Appendix F — Constraint Compiler (the frontend)
 
-The 02_constructive_samplers and 03_reactive_constraints examples were hand-coded proofs of concept. This is the **flow**: one tool
-(`csc.py`) that takes a real (restricted) SystemVerilog `constraint` spec and
-**automatically** emits a synthesizable UNRANK sampler + a synthesizable CHECKER +
-a self-checking testbench, then validates with verilator + yosys. No per-example
-hand-coding.
+Companion code for **Appendix F, "Synthesizing Constrained-Random Stimulus"** (and
+Chapter 4 §"Implementing the Constraint Solver"). This is the **frontend** of the
+constraint-to-hardware pipeline: it reads a real SystemVerilog `constraint` block and
+compiles it into a search-free *sampler* — a circuit that, given a seed, returns a
+legal assignment directly, with no runtime search and no rejection.
 
-**The book (`main.tex`) is untouched.** Run the whole flow: `./run_flow.sh`.
-Compile one spec: `python3 csc.py spec_riscv.txt`.
+Two programs do the work:
 
-## What it does (per spec, automatically)
+- **`csc.py`** — the compiler. Parses a restricted-SystemVerilog constraint spec,
+  classifies it, and emits a synthesizable sampler, a synthesizable checker, and a
+  self-checking testbench.
+- **`frontend.py`** — the symbol-table / resolution layer in front of it. Reads a
+  package's `enum` typedefs and a class's `rand` field widths from raw source, pulls
+  out a named `constraint` block, resolves every enum and `cfg.*` name to its value,
+  and writes a clean spec for `csc.py` to compile.
 
-1. **parse** real SV: `rand bit [W-1:0] name;` + `constraint c { ... }` with
-   `-> || && | ^ & == != < <= > >= << >> + - * / % ! ~`, bit/part-select,
-   literals (`8'hFF`), `inside {[lo:hi]}` / `inside {a,b,c}`, `if(c) e;`.
-2. **classify**: a `var*var` product => Tier-2 (route to the constructive
-   arithmetic template, never bit-blasted); else Tier-1 (boolean/relational).
-3. **compile** Tier-1: enumeration BDD + per-node model counts -> the unrank
-   sampler (one uniform R in [0,#sols) -> the R-th legal assignment).
-4. **emit**: `<spec>_sampler.sv` (synthesizable) + `<spec>_tb.sv` (the checker is
-   the constraint compiled to combinational SV -- universal, also synthesizable).
-5. **validate** (`run_flow.sh`): verilator runs 200k samples through the emitted
-   checker (expect 0 illegal + full coverage); yosys reports cells.
+## How it maps to the book
 
-## Results -- same tool, four real constraints
+Appendix F's claim is that the *model-finding* half of `randomize()` — find **one**
+legal assignment, never prove that none exists — is a datapath, not a solver. A
+relational constraint has a legal set that can be *structured* so that a seed indexes
+a member directly: a binary-decision-diagram (BDD) walk turns "the R-th legal tuple"
+into a short combinational path, and no candidate is ever generated and rejected.
+`csc.py` is that compilation. The emitted sampler produces its seed on-chip from a
+small LFSR, which is SystemVerilog's object random stability (Chapter 4 §"The
+Constraint Solver and Object-Based Randomization") rendered as gates: reproducible
+from that seed, and isolated from every other sampler.
 
-| spec | what | result | iCE40 |
-|---|---|---|---|
-| `spec_proto` | the hand-coded prototype constraint, now parsed | **416 sols, 0 illegal, full coverage** (matches the 02_constructive_samplers result exactly) | 160 LUT4 |
-| `spec_axi_field` | AXI4 burst-field legality (burst/size/len/region) | **288 sols, 0 illegal, full coverage** | 158 LUT4 |
-| `spec_riscv` | RISC-V R-type fields, coupled `rs1 != rd` (riscv-dv flavour) | **3844 sols, 0 illegal, full coverage** | 410 LUT4 |
-| `spec_mul` | `a*b < 1000000` | **classified Tier-2** (routed, not bit-blasted) | — |
+## What `csc.py` does, per spec
 
-The prototype constraint compiling to 160 LUT4 vs the hand-written 151 shows the
-flow produces RTL comparable to hand work.
+1. **Parse** a restricted SV subset: `rand bit [W-1:0] name;` fields and a
+   `constraint { ... }` body over `-> || && | ^ & == != < <= > >= << >> + - * / % ! ~`,
+   bit- and part-selects, sized literals (`8'hFF`), `inside {[lo:hi]}` /
+   `inside {a,b,c}`, `if (c) e;`, `foreach`, `unique`, and `dist`.
+2. **Classify.** A `variable * variable` product routes to **Tier-2** — the
+   constructive arithmetic templates in `../02_constructive_samplers` and
+   `../03_reactive_constraints`, never bit-blasted. Everything else is **Tier-1**
+   (boolean / relational).
+3. **Compile Tier-1.** Build an enumeration BDD with a model count at each node, which
+   yields an *unrank* sampler: one seed `R` in `[0, #solutions)` walks the diagram to
+   the R-th legal assignment in a single combinational pass.
+4. **Emit** three files per spec:
+   - `<spec>_sampler.sv` — the sampler as a synthesizable `csc_sampler` module;
+   - `<spec>_tb.sv` — a self-checking testbench whose checker *is* the constraint,
+     compiled to combinational SV (so it is a universal oracle, and itself
+     synthesizable);
+   - `<spec>_pkg.sv` — the same unrank as a package function, so a class-based
+     `ConstraintActor` in simulation calls the identical logic that runs on the fabric.
 
-## Front-end status — what now compiles automatically (all validated)
+A lone `dist` on one field compiles instead to a weighted cumulative-threshold
+sampler (`<spec>_sampler.sv` + `<spec>_tb.sv`).
 
-`frontend.py` is the symbol-table / resolution layer (the job a Surelog/slang
-front-end does; built directly since neither installed here without a heavy build).
-Each row below was run end-to-end and the solution count is **provably exact**:
+## Running it
 
-| feature | example | result |
+Requires `python3`, `verilator` (5.x), and `yosys` on `PATH`.
+
+```sh
+./run_flow.sh                 # compile, build, check, and synthesize four specs end to end
+python3 csc.py spec_riscv.txt # compile one spec -> its _sampler.sv, _tb.sv, _pkg.sv
+```
+
+`run_flow.sh` walks four representative specs. For each Tier-1 spec it runs 200,000
+seeds through the emitted checker (expecting zero illegal samples and every solution
+covered) and reports the iCE40 LUT4 count from `yosys synth_ice40`:
+
+| spec | constraint | you'll see |
 |---|---|---|
-| **enum + type resolution** (raw `.sv`) | riscv-dv `sp_tp_c` (`SP=2,GP=3,…` auto) | **840**, 0 illegal, full cov |
-| **`cfg.*` resolution** (config array bound + enum) | riscv-dv `instr_c` `!(gpr inside {cfg.reserved_regs,ZERO})` | **28**, 0 illegal, full cov |
-| **`foreach`-unroll + arrays** | register array, each `!=0` | exact, full cov |
-| **`unique` → all-different** | distinct register set | **26,970 = 31·30·29** |
-| **all combined** | `avail_regs` alloc (foreach+array+unique+cfg) | **19,656 = 28·27·26** |
-| **`dist` (weighted sampler)** | `dist {1:=30,0:=70}`; register dist w/ ranges & `:/` | observed ≈ expected (synthesizable CDF select) |
-| classify `var*var` → Tier-2 | `a*b<1e6` | routed, not bit-blasted |
+| `spec_proto` | a small worked example: `addr` / `kind` / `prio` with implications | 416 solutions, 0 illegal, full coverage; ~160 LUT4 |
+| `spec_axi_field` | AXI4 burst-field legality (burst / size / len / region) | 288 solutions, 0 illegal, full coverage; ~158 LUT4 |
+| `spec_riscv` | RISC-V R-type fields with coupled `rs1 != rd` | 3844 solutions, 0 illegal, full coverage; ~410 LUT4 |
+| `spec_mul` | `a * b < 1000000` | classified Tier-2 and routed (not bit-blasted) |
 
-Corpus study (`corpus/`): **76% of riscv-dv and 87% of OpenTitan** constraints are
-Tier-0/1/2 reachable. See `corpus/CORPUS_FINDINGS.md`.
+The other `spec_*.txt` in this directory cover `dist`, `unique` / all-different,
+`foreach` over arrays, and further riscv-dv blocks; compile any of them the same way.
 
-## Honest scope (what makes this a POC-of-a-flow, not the product)
+### From raw riscv-dv source
 
-- **Front-end** is a restricted-SV recursive-descent parser, not full IEEE-1800.
-  The production bridge is Surelog/slang or the Antmicro SV->SMT-LIB2 path
-  (`../sv-tools`, `../verilator-verification`) feeding the same IR.
-- **Tier-1** uses an *enumeration* BDD (<= 18 vars here). Production swaps in CUDD
-  apply-based construction for wide fields.
-- **Tier-2** is *detected and routed*, not yet auto-codegen'd; the constructive
-  templates exist (`tier2_mul` in 02_constructive_samplers, `pipelined_div` in 03_reactive_constraints,
-  `tier2b_coupled` with z3 certification) -- wiring the projection into `csc.py`
-  is the next step.
-- **Reactivity (03_reactive_constraints)**: the emitted samplers are open-loop; live-state
-  inputs (id_free, credits) and the network-of-actors decomposition are the next
-  integration (the sampler drops under `ConstraintActor.randomize_and_publish()`,
-  proven by `tier1_actor` in 02_constructive_samplers).
+`frontend.py` runs the compile against unmodified industrial source. It reads the
+vendored riscv-dv corpus (`corpus/riscv-dv/`, pinned — see `VENDORED_COMMIT.txt`):
 
-## Next (to make it the product)
+```sh
+python3 frontend.py \
+    corpus/riscv-dv/src/riscv_instr_pkg.sv \
+    corpus/riscv-dv/src/riscv_instr_gen_config.sv \
+    sp_tp_c
+```
 
-1. Tier-2 auto-codegen: z3 projection -> constructive arithmetic datapath in `csc.py`.
-2. CUDD apply + a real SV front-end (Surelog) -> arbitrary `constraint {}` blocks.
-3. Per-compile certification: emit a z3/Lean proof object that the sampler is
-   sound+complete for each generated constraint (the mechanism is shown in 02_constructive_samplers).
-4. Reactive lowering: live-state ports + the actor-network partitioner (03_reactive_constraints).
+This builds the enum symbol table (`SP=2`, `GP=3`, `ZERO=0`, …), resolves the `cfg.*`
+reserved-register set, writes `resolved_sp_tp_c.txt`, and compiles it — the same
+Tier-1 path, now driven from real source.
 
-(The corpus study originally listed here is **done** — 76% riscv-dv / 87% OpenTitan across
-2,097 blocks; see `corpus/CORPUS_FINDINGS.md` and the result above.)
+To see how much of that corpus this approach reaches:
+
+```sh
+python3 corpus/survey.py corpus/riscv-dv   # categorize every constraint block
+```
+
+It reports that **76% of the 140 riscv-dv constraint blocks** (across 89 files) are
+Tier-reachable — solver-free by structure.
+
+## What to look at
+
+- Open a generated `<spec>_sampler.sv`: the whole sampler is a handful of `case`
+  tables (the BDD) plus an LFSR — combinational logic, no solver underneath it.
+- `<spec>_tb.sv` shows the checker-is-the-constraint idea: the same relation is
+  emitted once as the sampler and once as the independent oracle.
+- **`closeloop/`** carries one real riscv-dv constraint all the way onto the actor
+  graph: the `sp_tp_c` constraint above, compiled once, runs as a software
+  `ConstraintActor` and as a synthesized RTL module and produces the identical legal
+  stream on both substrates. See `closeloop/README.md`.

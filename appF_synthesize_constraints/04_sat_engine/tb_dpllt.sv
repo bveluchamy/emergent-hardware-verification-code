@@ -1,4 +1,4 @@
-// tb_dpllt.sv -- 04_sat_engine POC(3) harness. Same as POC(1) plus the nonlinear
+// tb_dpllt.sv -- 04_sat_engine DPLL(T) harness. Same as tb_dpll.sv plus the nonlinear
 // product check v2*v3 < PLIMIT, to confirm the Tier-2 theory propagator is sound.
 
 module tb_top;
@@ -45,7 +45,7 @@ module tb_top;
       if (!seenflag[code]) begin seenflag[code] = 1'b1; nseen++; end
 
       if (ns >= K) begin
-        $display("=== 04_sat_engine POC(3): DPLL(T) with Tier-2 propagator, %0d samples ===", ns);
+        $display("=== 04_sat_engine: DPLL(T) with Tier-2 propagator, %0d samples ===", ns);
         $display("constraint: 5 vars in [1,9], all-different, sum==25, v0<v1, v2*v3 < %0d", PLIMIT);
         $display("cycles/sample     : mean=%0.1f max=%0d", real'(sumgap)/ns, maxgap);
         $display("backtracks/sample : mean=%0.2f max=%0d", real'(sumbt)/ns, maxbt);

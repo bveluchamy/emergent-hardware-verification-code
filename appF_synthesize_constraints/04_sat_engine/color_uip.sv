@@ -1,7 +1,7 @@
-// color_uip.sv -- 04_sat_engine POC(4f): TRUE first-UIP conflict analysis, in hardware.
+// color_uip.sv -- 04_sat_engine: TRUE first-UIP conflict analysis, in hardware.
 //
-// The one mechanism the whole arc localized. CDCL = decide + propagate + (on conflict)
-// 1-UIP clause learning + non-chronological backjump. POC(4e) proved the antecedent
+// The one mechanism that matters here. CDCL = decide + propagate + (on conflict)
+// 1-UIP clause learning + non-chronological backjump. The antecedent
 // (one-step) clause is NOT asserting and LOOPS. This implements real 1-UIP:
 //
 //   * Implication graph, finite-domain coloring form: a literal is "node = its current
@@ -21,8 +21,8 @@
 //     no loop. Chronological backtrack remains the backbone (value exhaustion).
 //
 // The parallel (combinational) clause cache here isolates the ALGORITHM (does real 1-UIP
-// beat DPLL on backtracks?). The DRAM-resident / pipelined substrate for that cache is the
-// orthogonal POC(4b)/(4c) story. Validated with verilator. Book main.tex untouched.
+// beat DPLL on backtracks?). The DRAM-resident, pipelined substrate for that cache is a
+// separate concern (see cdclt_dram.sv / color_uip_dram.sv).
 
 module color_uip #(
   parameter int N = 64,

@@ -1,4 +1,4 @@
-// color_dpll.sv -- 04_sat_engine POC(4d), baseline: graph-coloring DPLL (no learning).
+// color_dpll.sv -- 04_sat_engine, baseline: graph-coloring DPLL (no learning).
 //
 // A sparse-conflict instance (the regime where clause learning is supposed to beat
 // DPLL): the GROETZSCH graph -- 11 nodes, 20 edges, triangle-free, chromatic number 4.
@@ -6,8 +6,7 @@
 // Mycielski symmetry makes conflicts recur. K=4 colors is SAT but tight (K=3 is UNSAT).
 //
 // This file is the LEARN=0 baseline used to confirm the instance is genuinely hard
-// before adding minimal (antecedent) nogood learning. Validated with verilator.
-// Book main.tex untouched.
+// before adding minimal (antecedent) nogood learning.
 
 module color_dpll #(
   parameter int N = 16,        // nodes

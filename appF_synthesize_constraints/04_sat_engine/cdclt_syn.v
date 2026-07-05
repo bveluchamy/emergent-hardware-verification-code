@@ -1,4 +1,4 @@
-// cdclt_syn.v -- Verilog-2005 synthesis model of cdclt_solver.sv (POC(4) CDCL(T)).
+// cdclt_syn.v -- Verilog-2005 synthesis model of cdclt_solver.sv (CDCL(T)).
 // Mirrors the SV exactly (substrate-identity check) and lets yosys measure the area
 // cost of learning: synth with LEARN=0 (DPLL(T)) vs LEARN=1 (CDCL(T)), NGMAX sweeps
 // the learned-clause cache. 2D arrays flattened for the Verilog-2005 frontend.

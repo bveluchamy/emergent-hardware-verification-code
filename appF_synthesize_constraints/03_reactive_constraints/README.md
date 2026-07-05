@@ -1,52 +1,100 @@
-# 03_reactive_constraints: reactive / closed-loop constraint stimulus (research sandbox)
+# 03_reactive_constraints — reactive constraints and a propagation network
 
-Builds on the open-loop samplers of 02_constructive_samplers. Here the legal set depends on **live DUT
-state**, so the static-LUT / precompute path stops working — see **`BRAINSTORM.md`**
-for the full architecture (reactivity taxonomy, network-of-actors, pipelined bursts,
-emulator-memory strategies, hardware SAT, and 8 real-world examples).
+Companion code for **Appendix F, "Synthesizing Constrained-Random Stimulus."**
+`02_constructive_samplers/` compiles a *fixed* constraint straight to a datapath.
+This directory covers the cases that need more than one static draw: a **reactive**
+constraint, whose legal set depends on live design state, and a **propagation
+network**, a relational constraint solved by local all-different propagation with no
+search. It also carries the appendix's **Tier-2** arithmetic sampler (`A*B < LIMIT`)
+in its multi-cycle and fully-pipelined forms.
 
-**The book (`main.tex`) is untouched.** Reproduce: `./run_all.sh`.
+## How it maps to the appendix
 
-## Built POCs (validated + measured)
+Appendix F sorts constraints into three tiers of construction by shape (§"Three tiers
+of construction"); the static Tier-0/1 datapaths live in `02_constructive_samplers/`.
+The examples here are the cases past a single static draw:
 
-| dir | idea | result |
+| directory | idea in Appendix F | what it is |
 |---|---|---|
-| `axi_aw/` | AXI4 write-address, **reactive** (4KB-boundary coupling, WRAP alignment, size cap, **live `id_free` gating**) | 200k req → 124,623 issued **0 illegal**, 75,377 withheld on live state; **219 LUT4** (iCE40) |
-| `sudoku_net/` | 4×4 Sudoku as a **network of 16 cell-actors** doing closed-loop constraint propagation | **converged 2 cycles, solution VALID**; arc-consistency as a synthesizable systolic network |
-| `pipelined_div/` | 32-bit `A*B<LIMIT` with an **iterative divider** (multi-cycle burst) | 3000 samples **0 violations**, ~36 cyc/sample, **50.7 MHz** (vs 3.8 MHz combinational — 13×) |
-| `tier2_pipelined/` | the same, **fully pipelined** (1 sample/cycle) | 100k samples **0 violations**, **1.00 cyc/sample, 49.1 MHz**, 2173 LUT4 — see its README |
+| `axi_aw/` | reactive constraint — the legal set moves with design state | AXI4 write-address generator: 4KB-boundary coupling, WRAP alignment, `awsize` cap, and issuance gated on which IDs are free right now (`id_free`, a live input) |
+| `sudoku_net/` | a constraint solved as a distributed graph (§"One design, or a distributed graph") | 4×4 Sudoku as 16 cell actors doing all-different propagation to a fixpoint — arc-consistency as message-passing, no search stack |
+| `pipelined_div/` | Tier 2 — invert, don't bit-blast | `A*B < LIMIT` sampled by inverting the bound with an iterative shift-subtract divider — one legal pair per multi-cycle burst |
+| `tier2_pipelined/` | Tier 2, at full rate | the same sampler on a fully-pipelined divider — one legal pair every cycle (its own README) |
 
-The AXI checker caught a real generator bug live (unaligned INCR base crossing a 4KB
-boundary) — the checker-vs-generator duality in action.
+## Running
 
-## Performance — emulation throughput (why the stimulus is never the bottleneck)
+Needs `verilator` (5.x) on `PATH`; the area and Fmax figures also need `yosys` and
+`nextpnr-ice40`. `rm -rf obj_dir` cleans a build.
 
-A real SoC emulates at **1–2 MHz**. Every constraint tier compiles to a sampler that
-runs *far* faster than that, so the stimulus generator can never gate the emulation —
-it can drive a faster clock domain, or fan out to many parallel DUT instances, and
-still keep up trivially. Design policy: **Fmax-first** (sacrifice clock only if area is
-genuinely excessive, which on a real emulation FPGA it never is).
+`./run_all.sh` builds and runs `axi_aw`, `sudoku_net`, and `pipelined_div`, and prints
+each one's synthesis numbers. To build one on its own, from this directory:
 
-| tier | mechanism | throughput | **Fmax (iCE40)** | vs 1–2 MHz DUT |
-|---|---|---|---|---|
-| Tier-0 | constructive datapath | 1/cycle | native (fast) | ≫ |
-| Tier-1 | BDD unrank + **multiply-shift** range reduction | O(#bits)/sample | **97 MHz** | ≫ |
-| **Tier-2** | constructive arith + **pipelined divider** | **1/cycle** | **49 MHz** | **25–50×** |
-| dist | weighted CDF + multiply-shift | 1/cycle | 50 MHz | ≫ |
+```sh
+( cd axi_aw && verilator --binary -j 0 --timing --top-module tb_top \
+      axi_aw_sampler.sv tb_top.sv && ./obj_dir/Vtb_top )
 
-Key optimizations (all measured): the **Lemire multiply-shift** replaces the
-constant-modulo range reduction → **Tier-1 44.8 → 97 MHz, area-neutral**; the
-**pipelined divider** gives Tier-2 **1 sample/cycle at 49 MHz** (49 M legal
-constrained samples/s vs a 1–2 MHz DUT). The slow primitives (3.8 MHz combinational
-divider, the modulo) are retired; the iterative divider stays as the small-footprint /
-no-DSP option. On a real emulation fabric (DSP blocks, millions of LUTs) every figure
-here is faster and the areas are noise.
+( cd sudoku_net && verilator --binary -j 0 --timing -Wno-WIDTHEXPAND --top-module tb_top \
+      sudoku4_net.sv tb_top.sv && ./obj_dir/Vtb_top )
 
-Two design facts that fell out of the performance work: **`dist` is optional** (a
-coverage-efficiency knob, not legality — replaceable by closed-loop coverage feedback),
-and the **LFSR seed *is* the replay trace** (16 bits reproduces the entire stream;
-the trace actor is the complementary full-graph replay).
+( cd pipelined_div && verilator --binary -j 0 --timing -Wno-WIDTHEXPAND --top-module tb_top \
+      seq_div.sv pdiv_sampler.sv tb_top.sv && ./obj_dir/Vtb_top )
+```
 
-Sketched (in `BRAINSTORM.md`): RISC-V instruction stream (riscv-dv shape),
-credit/FIFO-gated traffic, packet header→payload actor pipeline, MSI cache-coherence
-legal-transition generator, OpenTitan CSR sequences.
+`tier2_pipelined/` has its own README and build line.
+
+## What each example shows
+
+**`axi_aw/` — the reactive case.** The legal AXI4 fields are drawn constructively
+(never generated and then rejected): the 4KB rule couples address, length, and size; a
+WRAP burst gets a legal `awlen` and an aligned address; `awsize` is capped at the bus
+width. What makes it *reactive* is the final gate — a transaction is issued only when
+the drawn `awid` is currently free, and `id_free` is a live DUT input. A static table
+cannot express this, because the legal set changes cycle to cycle. Expected output:
+
+```
+requests=200000 issued=124623 gated(reactive)=75377 illegal=0
+```
+
+Every issued beat is legal; the rest were withheld because their ID was busy. The
+testbench carries a full legality checker beside the generator — the same constraint
+serves twice, to drive stimulus and to check it. Reference area: ~219 LUT4 on an iCE40.
+
+**`sudoku_net/` — the propagation network.** Sixteen cell actors, each holding a 4-bit
+candidate set. Each cycle a cell drops from its set every value a peer (same row,
+column, or 2×2 box) has already pinned to a single candidate; the sets shrink
+monotonically to a fixpoint. There is no search and no backtracking — only fixed peer
+wiring and sixteen small FSMs, which is arc-consistency propagation rendered directly
+as gates. Expected output:
+
+```
+converged in 2 cycles  done=1 contra=0  VALID=1
+```
+
+This is the appendix's "distributed graph": one constraint solved by a mesh of
+independently-synthesizable cells, the shape an emulator places across its fabric.
+
+**`pipelined_div/` and `tier2_pipelined/` — Tier 2, invert don't bit-blast.** The
+constraint `A*B < LIMIT` contains a multiply that would explode if flattened to gates.
+The sampler inverts it instead: draw `A`, compute the bound `(LIMIT-1)/A` with a
+divider, then place `B` in `[0, bound]` with a Lemire multiply-shift. `pipelined_div/`
+uses an iterative shift-subtract divider whose critical path is a single subtract, so it
+holds a high clock but takes a burst of cycles per sample; `tier2_pipelined/` unrolls
+that divider into a pipeline so one legal pair emerges every cycle. Both emit only legal
+pairs:
+
+```
+pipelined_div:   samples=3000   violations=0 cycles=108000  (~36 cyc/sample, burst)
+tier2_pipelined: samples=100000 violations=0 cycles=100032  (1.00 cyc/sample)
+```
+
+Latency versus throughput on the identical construction — see `tier2_pipelined/README.md`
+for the pipelined divider.
+
+## What to read
+
+- `axi_aw/axi_aw_sampler.sv` — the constructive field draws, and the one
+  `if (id_free[id_c])` gate that makes issuance reactive.
+- `sudoku_net/sudoku4_net.sv` — the `forbidden[]` peer-union loop; the whole solver is
+  that plus `domain <= domain & ~forbidden`.
+- `pipelined_div/seq_div.sv` and `tier2_pipelined/pipe_div.sv` — the iterative and
+  pipelined forms of the same shift-subtract divider.

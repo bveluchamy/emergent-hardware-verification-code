@@ -1,4 +1,4 @@
-// color_uip_seq_syn.v -- Verilog-2005 synthesis model of color_uip_seq.sv (POC-4h).
+// color_uip_seq_syn.v -- Verilog-2005 synthesis model of color_uip_seq.sv.
 // The conflict analysis is sequential (one neighbour/cycle), so the per-cycle combinational
 // logic is small and yosys can synthesize it. Verified bit-identical to the SV; then synth.
 

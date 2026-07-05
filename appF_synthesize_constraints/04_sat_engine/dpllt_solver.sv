@@ -1,6 +1,6 @@
-// dpllt_solver.sv -- 04_sat_engine POC(3): DPLL(T) with a Tier-2 nonlinear theory propagator.
+// dpllt_solver.sv -- 04_sat_engine: DPLL(T) with a Tier-2 nonlinear theory propagator.
 //
-// POC(1) handled LIA (sum, ordering) + all-different. POC(3) adds a genuinely NONLINEAR
+// dpll_solver.sv handled LIA (sum, ordering) + all-different. This engine adds a genuinely NONLINEAR
 // constraint and propagates it WITHOUT bit-blasting -- the "(T)" in DPLL(T):
 //
 //     5 vars v0..v4 in [1,9]
@@ -16,7 +16,6 @@
 // for large domains the 03_reactive_constraints pipelined divider is the identical drop-in.
 // The multiplier is only the checker; its inverse (the divider) is the generator.
 //
-// Validated with verilator. Book main.tex untouched.
 
 module dpllt_solver #(
   parameter int NV     = 5,

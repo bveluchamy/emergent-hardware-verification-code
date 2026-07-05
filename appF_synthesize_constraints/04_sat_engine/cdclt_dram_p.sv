@@ -1,6 +1,6 @@
-// cdclt_dram_p.sv -- 04_sat_engine POC(4c): PIPELINED DRAM-backed nogood BCP.
+// cdclt_dram_p.sv -- 04_sat_engine: PIPELINED DRAM-backed nogood BCP.
 //
-// POC(4b) swept the cache at 3 cycles/nogood: two chained memory hops (occ -> id ->
+// cdclt_dram.sv swept the cache at 3 cycles/nogood: two chained memory hops (occ -> id ->
 // ngmem -> record) plus the check. Two fixes, both "spend abundant DRAM to buy cycles":
 //
 //   1. DENORMALIZE -- store the nogood RECORDS directly in the per-literal occurrence
@@ -11,7 +11,6 @@
 //
 // Net: the sequential-BCP cost drops ~3x, area stays flat (single memory, fixed engine),
 // soundness/completeness unchanged (BCP only prunes; the search is complete).
-// Validated with verilator. Book main.tex untouched.
 
 module cdclt_dram_p #(
   parameter int NV=5, DW=9, SUM=25, PA=2, PB=3, PLIMIT=20, OCCMAX=64

@@ -1,6 +1,6 @@
-// cdclt_dram.sv -- 04_sat_engine POC(4b): DRAM-backed sequential nogood BCP.
+// cdclt_dram.sv -- 04_sat_engine: DRAM-backed sequential nogood BCP.
 //
-// POC(4) kept the learned-clause cache in registers and checked ALL nogoods every
+// cdclt_solver.sv kept the learned-clause cache in registers and checked ALL nogoods every
 // cycle in parallel combinational logic: free per-cycle, but O(NGMAX) LUTs -- it
 // exceeded the part at NGMAX=16 and would not even synthesize at 64. Emulators have
 // huge, under-used DRAM. So move the cache to MEMORY and make BCP SEQUENTIAL:
@@ -17,8 +17,7 @@
 //
 // Net: area moves from LUTs (exploding) to BRAM/DRAM (flat, abundant); BCP trades
 // parallel logic for a bounded number of sequential memory cycles. Same instance as
-// POC(3)/(4): 5 vars [1,9], all-different, sum==25, v0<v1, v2*v3<PLIMIT.
-// Validated with verilator. Book main.tex untouched.
+// the dpllt/cdclt solvers: 5 vars [1,9], all-different, sum==25, v0<v1, v2*v3<PLIMIT.
 
 module cdclt_dram #(
   parameter int NV     = 5,

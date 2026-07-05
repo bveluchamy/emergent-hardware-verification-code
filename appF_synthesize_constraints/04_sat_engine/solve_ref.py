@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""04_sat_engine POC(1) reference: enumerate the exact legal set so we can cross-check
+"""04_sat_engine reference: enumerate the exact legal set so we can cross-check
 the RTL engine's soundness (every emitted sample must be in this set) and coverage
 (over many seeds it should reach all of it).
 

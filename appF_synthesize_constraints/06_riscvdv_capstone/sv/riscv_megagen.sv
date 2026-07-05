@@ -5,7 +5,7 @@
 // single top (`riscv_megagen`) over the slice modules:
 //   reg-alloc (mrsel, s1/s5/s7) · immediates (imm_gen, s2) · load/store addr_c chain (addr_gen, s3) ·
 //   full-format assembly (instr_assemble, s4) · dist-weighted return reg (ra_dist_gen, s9) ·
-//   vector LMUL (vlmul_gen, s6) · the live-state stream (s7).  Book main.tex untouched.
+//   vector LMUL (vlmul_gen, s6) · the live-state stream (s7).
 
 // idx-th register NOT in `excluded`, clamped (the slice-1/5/7 selector, one copy for the mega top).
 module mrsel (input logic [31:0] excluded, input logic [4:0] idx, output logic [4:0] reg_out);

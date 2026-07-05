@@ -1,101 +1,97 @@
-# 04_sat_engine POC(1): synthesizable DPLL residue solver — measured
+# Appendix F — A SAT engine on the fabric (the hard tier)
 
-The first build of the `DESIGN.md` architecture. A finite-domain **DPLL** engine that
-runs **search on the fabric** for the R3 residue, and the load-bearing measurement it was
-built to produce: **cycles/sample** against the emulation budget. Book `main.tex` untouched.
+Companion code for Appendix F, "Synthesizing Constrained-Random Stimulus." Most
+constrained-random stimulus can be produced by *direct construction* — a sampler that
+builds a legal value with no search (the soft tiers, in the other Appendix F
+directories). A few constraints genuinely need a search: an all-different web plus a sum
+budget, a dense graph colouring near its threshold. This directory is the **hard tier** —
+a satisfiability engine, **DPLL → DPLL(T) → 1-UIP CDCL**, written as ordinary synthesizable
+RTL so the search runs *on the same fabric as the design under test*. That is the point the
+appendix makes here: even when a constraint needs a solver, the method never quietly hands
+off to a software solver on the host. The solver is hardware too.
 
-## The constraint (chosen to *need* search)
+## The two instances (chosen to *need* search)
 
-```
-5 variables v0..v4, each in [1,9]
-all-different(v0..v4)            <- disequality web: the search driver
-v0 + v1 + v2 + v3 + v4 == 25     <- LIA budget: bound propagation (the "free bulk")
-v0 < v1                          <- one LIA ordering
-```
+Propagation alone closes neither — both genuinely branch and backtrack.
 
-Bounds/all-different propagation alone does **not** close this — it genuinely branches and
-backtracks. `solve_ref.py` enumerates the exact legal set: **720 solutions** (12 distinct
-5-subsets × 60 orderings), every emitted sample must be one of them.
+- **Residue** (`dpll_solver.sv` and up): five variables `v0..v4`, each in `[1,9]`,
+  `all-different`, `v0+v1+v2+v3+v4 == 25`, `v0 < v1`. `solve_ref.py` enumerates the exact
+  legal set (720 assignments) so every emitted sample can be cross-checked. The `dpllt` /
+  `cdclt` engines add one *nonlinear* atom, `v2*v3 < PLIMIT` (`solve_ref_t.py` is its
+  reference).
+- **Colouring** (`color_*.sv`): a 64-node graph, 3 colours, generated dense and planted-SAT
+  near the 3-colouring threshold (`gen5.py` writes the adjacency into `nbr.hex`). At this
+  density the search is deep even with full unit propagation — the regime where clause
+  learning earns its keep.
 
-## The engine (the `DESIGN.md` architecture, built)
+## The engines — one synthesizable FSM each
 
-- **bitset domains** (9 b/var) — all-different propagated Sudoku-style (extends `sudoku_net`)
-- **LIA sum bound-propagation** reasoned over the `[min,max]` of each bitset — constant-
-  coefficient datapath (coeffs are 1 here → pure add; a general `a_i` is a shift-add, *no
-  general multiplier*)
-- **Boolean shell**: decide (LFSR picks **both** variable and value) + trail + chronological
-  backtrack; **model-finding only**, reseeded each sample
-- emits one legal assignment per search; the LFSR seed *is* the replay trace
+| file | engine | what it adds |
+|---|---|---|
+| `dpll_solver.sv` | **DPLL** | bitset domains; all-different + LIA sum bound-propagation to a fixpoint; a Boolean shell (LFSR decision, trail, chronological backtrack). Model-finding only — it emits one legal assignment per search and reseeds; the 16-bit LFSR seed *is* the replay trace. |
+| `dpllt_solver.sv` | **DPLL(T)** | a nonlinear theory atom `v2*v3 < PLIMIT`, propagated by its *inverse* (a compile-time division table) instead of bit-blasted into Boolean clauses — "invert, don't bit-blast." The multiplier is only the checker; its inverse is the generator. |
+| `cdclt_solver.sv` | **CDCL(T)** | conflict-driven clause learning: each conflict records a *nogood* (the negation of the current decision set) that then does unit propagation on later branches. `LEARN=0` reduces it to plain DPLL(T) on the same instance. Backtracking stays chronological, so completeness comes from the search, not the learned database. |
+| `color_uip.sv` | **1-UIP CDCL** | true first-UIP conflict analysis — resolve back along the implication graph to the unique implication point — plus non-chronological backjump to the asserting level. `LEARN=0` is the plain-DPLL baseline on the same graph. |
 
-## Results
+`color_dpll.sv` (a small triangle-free instance) and `color_wide.sv` (the 64-node graph)
+are the DPLL baselines the 1-UIP engine is compared against.
 
-| measurement | value |
-|---|---|
-| **soundness** | **200,000 samples, 0 illegal** (every sample satisfies all-different ∧ sum==25 ∧ v0<v1) |
-| **cycles/sample** | **mean 20.6, max 28** (clock-independent search cost) |
-| **backtracks/sample** | **mean 0.31, max 4** — the search is *shallow* |
-| **coverage** | **685 / 720 distinct** open-loop (95%); see the bias note |
-| **substrate-identity** | SV form ≡ Verilog-2005 synth model, **bit-for-bit** (20.6 cyc, 685 distinct) |
-| **fabric (iCE40 HX8K)** | **4519 logic cells (58%)**, 2867 LUT4 / ~537 DFF / 1628 carry; **Fmax ≈ 16 MHz** |
+## Where the learned clauses live — gates, then DRAM
 
-### What the numbers say
+A learned-clause store is the one part that does not want to be logic. `cdclt_solver.sv`
+and `color_uip.sv` keep the cache in registers and check every nogood in parallel
+combinational logic each cycle: free per cycle, but the area grows with the cache depth,
+so a deep cache will not fit. An emulator has the opposite resource — abundant, under-used
+memory. `cdclt_dram.sv` and `color_uip_dram.sv` move the store into memory and make BCP
+*sequential and indexed*: a per-literal occurrence list means a decision walks only the
+handful of nogoods that mention the literal it just pinned, read from memory over a bounded
+number of cycles. Area moves off the LUTs (which were exploding) onto memory bits (flat and
+cheap), so the cache can be deep. `cdclt_dram_p.sv` pipelines that sweep to one record per
+cycle. The store only prunes — the underlying search is complete — so a late or evicted
+nogood costs search effort, never a wrong answer.
 
-1. **DPLL alone closes this residue.** Mean **0.31** backtracks/sample, max 4 — the search
-   tree is shallow, exactly the regime `DESIGN.md §8` predicted. The expensive CDCL
-   machinery (clause learning, VSIDS) would never amortize here. **POC (4) is not needed for
-   this class.** Measure-then-build, confirmed.
-2. **It is sound by construction, and a real bug was caught.** The first build emitted two
-   `9`s — a single propagation round can pin two variables to the same value via the
-   sum-bound, and the all-different check in that round used the *pre-round* singletons. The
-   fix is correct DPLL discipline: **emit only on a clean fixpoint** (`!changed`), so a
-   duplicate surfaces as the next round's conflict. After the fix: 200k samples, 0 illegal.
-3. **Substrate-identity holds for a *searching* actor**, not just a sampler. The SV class
-   form and the Verilog-2005 synth model reproduce each other bit-for-bit — the same engine,
-   two renderings, as the thesis requires.
-4. **Coverage vs. legality, exactly as flagged.** 685/720 open-loop, and the *same* 685
-   recur at both 5k and 200k samples — a deterministic orbit (the seed is the trace).
-   The 35 unreached are first-solution bias of the randomized-restart labeling, not
-   unsoundness. Legality is load-bearing and total; uniform coverage is the optional knob,
-   closable with coverage feedback (exclude-seen — the `dist`/coverage-actor mechanism).
+## Same source, two renderings
 
-### Fabric area, Fmax, and the budget — honestly
+Each residue engine ships with a Verilog-2005 twin (`dpll_solver_syn.v`, `cdclt_syn.v`,
+`cdclt_dram_syn.v`) — the *same* engine expressed for a plain synthesis flow. `run.sh` runs
+the SystemVerilog form and the Verilog form and checks they reproduce each other bit-for-bit,
+then pushes the Verilog through yosys + nextpnr-ice40 for iCE40 HX8K area and Fmax. One
+authored engine, one behaviour, whether it renders as a simulation class or as gates on the
+fabric — the appendix's substrate point, applied to a *searching* engine.
 
-4519 LC / ~16 MHz on the **smallest no-DSP iCE40**. The critical path is the **single-cycle
-combinational propagation round** (all propagators + the min/max priority encoders +
-range-mask comparators in one cycle). Reconciling with the budget two ways, kept separate:
+## Running
 
-- **Cycle budget (clock-independent):** the search costs **20.6 cyc/sample** vs the
-  ~240-cycle reference (a 49 MHz target / 2 MHz DUT × ~10 DUT-cyc/transaction) → **~12× under
-  in cycles**. This is a property of the *search depth*, and it is the headline DPLL fact.
-- **Wall-clock at this part:** at the measured **16 MHz**, 20.6 cyc/sample = **~0.78 M legal
-  samples/s**. A 1–2 MHz SoC DUT taking *transaction-granular* residue stimulus demands
-  ≲0.1–0.2 M/s, so even unoptimized on the tiniest fabric there is **~4–8× throughput
-  headroom** — the residue solver is not the bottleneck.
-
-The gap between the ~12×-in-cycles and ~4×-in-wall-clock is entirely the 16 MHz vs 49 MHz
-clock, and it is the obvious **Fmax-first lever**: **pipeline the propagation round**
-(register min/max separately from the bound/mask stage), the same move that took Tier-1 from
-44.8 → 97 MHz. On a real emulation FPGA (DSP blocks, fast fabric) this 16 MHz floor lifts
-substantially on its own. Fmax optimization is deferred — POC (1)'s job was the cycles/sample
-number, and that is in.
-
-## What this decides downstream
-
-- **POC (3) is the next headline**: wire a **Tier-2 divider in as a nonlinear theory
-  propagator** (`A*B<LIMIT ∧ linear bounds`) — DPLL(**T**), Bryant honored, certified `(T)`.
-- **POC (4) (CDCL learning) stays deferred** — this residue is shallow; learning has nothing
-  to amortize. It returns only if a residue shows recurring deep conflicts.
-- A clean **Fmax pass** (pipeline the propagation round) is the one engineering follow-up if
-  the wall-clock margin ever needs to be the full 12×.
-
-## Reproduce
+Requires `verilator` (5.x). `run.sh` / `run_cdcl.sh` also use `yosys` and `nextpnr-ice40`
+for the area / Fmax steps (skipped cleanly if absent). The colouring sims read `nbr.hex`,
+so run them from this directory. Every harness has top module `tb_top` and takes
+`+K=<samples>`.
 
 ```sh
-./run.sh                 # ref set + SV sim + substrate-identity + iCE40 area/Fmax
-K=5000 ./run.sh          # shorter sample count
-python3 solve_ref.py     # the exact 720-solution reference
+./run.sh                 # DPLL residue: reference set, sim, SV=Verilog check, iCE40 area/Fmax
+K=5000 ./run.sh          # the same, fewer samples
+
+./run_cdcl.sh            # DPLL(T) + CDCL(T): learning on/off, nogood-cache sweep, area of learning
+
+# the engines without a wrapper script (same flags the scripts use):
+VF="--binary -j 0 --timing -Wno-fatal -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC --top-module tb_top"
+verilator $VF tb_uip.sv  color_uip.sv  && ./obj_dir/Vtb_top +K=300      # 1-UIP CDCL colouring (-GLEARN=0 = DPLL baseline)
+verilator $VF tb_dram.sv cdclt_dram.sv && ./obj_dir/Vtb_top +K=200000  # DRAM-backed nogood cache
 ```
 
-Files: `dpll_solver.sv` (the engine), `dpll_solver_syn.v` (bit-identical Verilog-2005 synth
-model), `tb_dpll.sv` (self-checking measurement harness), `solve_ref.py` (exact reference),
-`synth.ys` (yosys script), `DESIGN.md` (the architecture this builds).
+Each harness asserts that *every* emitted sample satisfies all constraints (an illegal
+sample aborts the run) and reports cycles/sample, backtracks/sample, and the distinct-
+solution count. The legality check is the key correctness property: the engine is a
+model-finder, so a satisfiable instance always yields a legal assignment, and an
+unsatisfiable state would be "withhold," never a wrong sample.
+
+## What to read
+
+- The four solver files in order — `dpll_solver.sv`, `dpllt_solver.sv`, `cdclt_solver.sv`,
+  `color_uip.sv` — are the escalation from propagation, to theory propagation without
+  bit-blasting, to clause learning, to real 1-UIP analysis with backjump, each a
+  self-contained synthesizable FSM.
+- `cdclt_dram.sv` / `color_uip_dram.sv` next to their register-cache siblings show *where*
+  a learned-clause store belongs on an emulator: in memory, reached by a bounded sequential
+  sweep, not in a wall of LUTs.
+- The `*_syn.v` twins and `run.sh`'s iCE40 pass show the same authored engine landing on
+  gates.
