@@ -201,7 +201,7 @@ package actor_patterns_pkg;
       // while we waited, dropping them silently would defeat the pattern ---
       // report it.
       foreach (scratch[i])
-        if (!mbox.try_put(scratch[i]))
+        if (mbox.try_put(scratch[i]) == 0)
           $error("%s: receive_only dropped a deferred %s (mailbox full)",
                  name, scratch[i].getTypeName());
     endtask

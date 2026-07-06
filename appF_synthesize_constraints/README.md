@@ -22,7 +22,7 @@ Each directory has its own short `README` (and `run.sh` / `Makefile`) with the e
 
 ```sh
 cd 05_lean_certified   && ./run.sh                    # the Lean proofs (0 sorries)
-cd 04_sat_engine       && make && ./obj_dir/Vtb_dpll  # the SAT engine on the fabric
+cd 04_sat_engine       && ./run.sh                    # the SAT engine on the fabric
 cd 06_riscvdv_capstone && cat README.md               # the capstone run instructions
 ```
 
