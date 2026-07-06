@@ -29,7 +29,7 @@ the `pre-code-reorg` tag is the restore point.
 | C | `appC_earlgrey/` | 28-IP OpenTitan as actors (RAL generator in `tools/reggen_actor.py`) |
 | D | *(none)* | From Spec to Silicon — conceptual; draws on appG/appE |
 | E | `appE_synth/` | synthesizable form (counter actor → iCE40) |
-| F | `appF_synthesize_constraints/` | constrained-random samplers (`01_constraint_compiler` … `06_riscvdv_capstone`, vendored riscv-dv); full research record in `synthesize_constraints/` |
+| F | `appF_synthesize_constraints/` | constrained-random samplers (`01_constraint_compiler` … `06_riscvdv_capstone`, vendored riscv-dv) |
 | G | `appG_firesim_substrate_swap/` | substrate swap, sim ≡ fabric (the book's "substrate-swap example") |
 | H | *(none)* | AI-driven RTL — conceptual; uses appE + appG |
 | I | `appI_actor_sim/` | actor-based hardware simulator (self-contained) |
