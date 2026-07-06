@@ -12,22 +12,29 @@ synchronizes the request through a 2-flop wall, captures the data, and raises
 | `cdc_handshake_rx.sv`         | the synthesizable receiver (2-flop sync + 4-phase FSM) |
 | `cdc_handshake_rx_checker.sv` | bound checker -- the assume-guarantee perimeter |
 | `tb_top.sv`                   | Verilator testbench (TX env FSM + directed handshakes) |
-| `fv/cdc_handshake_rx_mut.sv`  | the book design with ONE injected bug (ack stuck low) |
+| `fv/cdc_handshake_rx_mut.sv`     | the book design with ONE injected liveness bug (ack stuck low) |
+| `fv/cdc_handshake_rx_datamut.sv` | the book design with ONE injected data bug (valid one cycle early) |
 
 ## The contracts (assume-guarantee)
 A CDC handshake can only be proved against the *promises* the other domain
-makes. The checker splits the protocol into two assumes and two guarantees:
+makes. The checker splits the protocol into three assumes and three guarantees:
 
 **Assumes (the TX environment contract).** The formal tool treats the incoming
-request as a free variable; these constrain it to the legal 4-phase protocol so
-the engine does not chase spurious traces (e.g. req dropping after one tick):
+request and data as free variables; these constrain them to the legal 4-phase
+protocol so the engine does not chase spurious traces (e.g. req dropping after
+one tick):
 1. **Hold req until ack** -- `req && !ack |=> req`.
 2. **Drop req after ack** -- `req && ack |=> !req`.
+3. **Hold data stable** -- `req && !ack |=> $stable(data)`. Data stability is the
+   *sender's* obligation, so it is an assume, not something RX guarantees.
 
 **Guarantees (the RX receiver contract).** Under those assumes, the receiver
 must:
-1. **Answer req with ack** -- `req |-> s_eventually(ack)`.
-2. **Drop ack after req drops** -- `!req |-> s_eventually(!ack)`.
+1. **Clean crossing** (safety) -- `data_valid |-> data_out == $past(data)`: every
+   captured beat is exactly the datum TX presented, with no torn value. This is
+   the reason a CDC exists; the handshake is the mechanism that earns it.
+2. **Answer req with ack** (liveness) -- `req |-> s_eventually(ack)`.
+3. **Drop ack after req drops** (liveness) -- `!req |-> s_eventually(!ack)`.
 
 ## Run it (Verilator)
 ```sh
@@ -47,9 +54,10 @@ rise within the window).
 
 ## Prove it (the Chapter 3 engines)
 ```sh
-make prove       # both guarantees under the two assumes
+make prove       # clean crossing + both liveness guarantees, under the assumes
 make check       # quiet: per-engine verdicts + PROOF HOLDS, exit code
-make bug         # the injected bug (ack stuck low -> starved request) is CAUGHT
+make bug         # the liveness bug (ack stuck low -> starved request) CAUGHT
+make bug-data    # the data bug (valid one cycle early -> stale beat) CAUGHT
 ```
 
 **Watch it think.** Every proof above is quiet by default. Add
@@ -64,9 +72,11 @@ solver solves, step by step.
 **exactly as the book prints them** into the from-scratch proof engines of
 `../../ch3_fv_examples/01_proof_engines`. No env file is needed: the checker's
 own `assume property` lines are the environment contract, and the engines honor
-them as constraints. The two guarantees are proved in the book's own
-`s_eventually` form -- genuine liveness, reduced to a lasso-unreachability
-safety problem (liveness-to-safety) and closed by IC3.
+them as constraints. The clean-crossing guarantee is a pure safety property (the
+32-bit datapath carried word-for-word, proved for every value); the two
+completion guarantees are proved in the book's own `s_eventually` form -- genuine
+liveness, reduced to a lasso-unreachability safety problem (liveness-to-safety)
+and closed by IC3.
 `make traces` regenerates the committed engine-level narratives.
 
 **Branch note.** The checker's formal branch is the book listing verbatim
