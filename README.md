@@ -7,6 +7,8 @@ The reference actor framework and every worked example from the book
 - `actor_pkg_cpp/`, `actor_pkg_systemc/` — the C++ and SystemC renderings
 - `ch*_*/`, `app*_*/` — per-chapter and per-appendix examples (see `CODE_MAP.md`)
 
+Browse all of it online, folder by folder, at **[emergenthardware.com/code](https://emergenthardware.com/code)**.
+
 ## License
 
 Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE). You may
