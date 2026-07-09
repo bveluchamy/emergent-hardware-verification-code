@@ -16,7 +16,7 @@ under every other engine, and a minimal SystemVerilog frontend reads the real RT
 so the model the engines prove is *derived from the design*, not hand-written:
 
 ```
-elevator.sv / fifo.sv  ──frontend──▶  TransitionSystem  ──Tseitin──▶  CNF  ──▶  CDCL → BMC → k-induction → IC3 → interpolation
+elevator.sv / fifo.sv  ──frontend──▶  TransitionSystem  ──Tseitin──▶  CNF  ──▶  CDCL → BMC → k-induction → interpolation → IC3
 ```
 
 ## Run it
