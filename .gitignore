@@ -9,3 +9,6 @@ __pycache__/
 *.pyc
 # macOS
 .DS_Store
+# Private-only experiments/notes: *_experiment/ dirs are tracked in the private
+# repo but never published here. The sync also strips them, so this is a backstop.
+*_experiment/
